@@ -1,11 +1,11 @@
-[![Build Status](https://travis-ci.org/lasote/conan-harfbuzz.svg)](https://travis-ci.org/lasote/conan-harfbuzz)
+[![Build Status](https://travis-ci.org/bincrafters/conan-harfbuzz.svg)](https://travis-ci.org/bincrafters/conan-harfbuzz)
 
 
 # conan-harfbuzz
 
 [Conan.io](https://conan.io) package for harfbuzz library
 
-The packages generated with this **conanfile** can be found in [conan.io](https://conan.io/source/harfbuzz/1.2.4/lasote/stable).
+The packages generated with this **conanfile** can be found in [conan.io](https://conan.io/source/harfbuzz/1.7.1/bincrafters/stable).
 
 ## Build packages
 
@@ -15,20 +15,20 @@ Download conan client from [Conan.io](https://conan.io) and run:
 
 ## Upload packages to server
 
-    $ conan upload harfbuzz/2.0.3@lasote/stable --all
+    $ conan upload harfbuzz/1.7.1@bincrafters/stable --all
     
 ## Reuse the packages
 
 ### Basic setup
 
-    $ conan install harfbuzz/2.0.3@lasote/stable
+    $ conan install harfbuzz/1.7.1@bincrafters/stable
     
 ### Project setup
 
 If you handle multiple dependencies in your project is better to add a *conanfile.txt*
     
     [requires]
-    harfbuzz/2.0.3@lasote/stable
+    harfbuzz/1.7.1@bincrafters/stable
 
     [options]
     harfbuzz:shared=true # false
