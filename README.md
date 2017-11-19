@@ -3,7 +3,7 @@
 
 # conan-harfbuzz
 
-[Conan.io](https://conan.io) package for harfbuzz library
+[Conan.io](https://conan.io) package for H[arfbuzz library](http://harfbuzz.org).
 
 The packages generated with this **conanfile** can be found in [conan.io](https://conan.io/source/harfbuzz/1.7.1/bincrafters/stable).
 
