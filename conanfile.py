@@ -36,7 +36,7 @@ class HarfbuzzConan(ConanFile):
             self.build_requires("ragel_installer/6.10@sigmoidal/stable")
         else:
             pack_name = None
-            if os_info.is_linux:
+            if tools.OSInfo().is_linux:
                 pack_name = "ragel"
 
             if pack_name:
