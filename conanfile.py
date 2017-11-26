@@ -33,7 +33,7 @@ class HarfbuzzConan(ConanFile):
 
     def build_requirements(self):
         if self.settings.os == "Windows":
-            self.build_requires("ragel_installer/6.10@sigmoidal/stable")
+            self.build_requires("ragel_installer/6.10@bincrafters/stable")
         else:
             pack_name = None
             if tools.OSInfo().is_linux:
@@ -44,7 +44,7 @@ class HarfbuzzConan(ConanFile):
                 installer.install(pack_name)
 
         if self.options.with_freetype:
-            self.build_requires("freetype/2.8.1@bincrafters/testing")
+            self.build_requires("freetype/2.8.1@bincrafters/stable")
 
 
     def source(self):
