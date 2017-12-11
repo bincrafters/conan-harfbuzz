@@ -44,10 +44,10 @@ The following command both runs all the steps of the conan file, and publishes t
 ### Available Options
 | Option        | Default | Possible Values  |
 | ------------- |:----------------- |:------------:|
-| shared      |                        |  [True, False] |
-| fPIC      |                        |  [True, False] |
-| with_freetype      |                        |  [True, False] |
-| with_icu      |                        |  [True, False] |
+| shared      | False |  [True, False] |
+| fPIC      | True |  [True, False] |
+| with_freetype      | False |  [True, False] |
+| with_icu      | False |  [True, False] |
 
 ## Add Remote
 
@@ -63,4 +63,4 @@ The following command both runs all the steps of the conan file, and publishes t
 NOTE: The conan recipe license applies only to the files of this recipe, which can be used to build and package harfbuzz.
 It does *not* in any way apply or is related to the actual software being packaged.
 
-[LICENSE](https://github.com/bincrafters/conan-harfbuzz.git/blob/testing/1.7.2/LICENSE.md)
+[LICENSE](https://github.com/bincrafters/conan-harfbuzz.git/blob/stable/1.7.2/LICENSE.md)
