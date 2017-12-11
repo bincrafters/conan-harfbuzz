@@ -25,7 +25,7 @@ class HarfbuzzConan(ConanFile):
 
     default_options = "shared=False", \
                       "fPIC=True", \
-                      "with_freetype=False" \
+                      "with_freetype=False", \
                       "with_icu=False"
 
     exports_sources = "CMakeLists.txt"
