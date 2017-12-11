@@ -7,7 +7,7 @@ import os
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
-    version = "1.7.1"
+    version = "1.7.2"
     homepage = "http://harfbuzz.org"
     description="HarfBuzz is an OpenType text shaping engine."
 
@@ -15,16 +15,18 @@ class HarfbuzzConan(ConanFile):
     license="MIT"
 
     settings = "os", "arch", "compiler", "build_type"
-    short_paths = True
     generators = "cmake"
+    short_paths = True
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
-               "with_freetype": [True, False]}
+               "with_freetype": [True, False],
+               "with_icu": [True, False]}
 
     default_options = "shared=False", \
                       "fPIC=True", \
-                      "with_freetype=False"
+                      "with_freetype=False" \
+                      "with_icu=False"
 
     exports_sources = "CMakeLists.txt"
     exports = "FindHarfbuzz.cmake"
@@ -32,8 +34,8 @@ class HarfbuzzConan(ConanFile):
     source_url="https://github.com/behdad/harfbuzz/archive/%s.tar.gz" % version
 
     def build_requirements(self):
-        if self.settings.os == "Windows":
-            self.build_requires("ragel_installer/6.10@sigmoidal/stable")
+        if self.settings.compiler == "Visual Studio":
+            self.build_requires("ragel_installer/6.10@bincrafters/stable")
         else:
             pack_name = None
             if tools.OSInfo().is_linux:
@@ -44,8 +46,10 @@ class HarfbuzzConan(ConanFile):
                 installer.install(pack_name)
 
         if self.options.with_freetype:
-            self.build_requires("freetype/2.8.1@bincrafters/testing")
+            self.build_requires("freetype/2.8.1@bincrafters/stable")
 
+        if self.options.with_icu:
+            self.build_requires("icu/60.1@bincrafters/stable")
 
     def source(self):
         tools.get(self.source_url)
@@ -65,12 +69,12 @@ class HarfbuzzConan(ConanFile):
         if compiler in ("clang", "apple-clang"):
             # without the following, compilation gets stuck indefinitely
             flags.append("-Wno-deprecated-declarations")
-               
+
         cmake.definitions["CMAKE_C_FLAGS"] = " ".join(flags)
         cmake.definitions["CMAKE_CXX_FLAGS"] = cmake.definitions["CMAKE_C_FLAGS"]
-        
+
         cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
- 
+
         cmake.definitions["BUILD_SHARED_LIBS"] = self.options.shared
 
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
@@ -83,8 +87,8 @@ class HarfbuzzConan(ConanFile):
                 cmake.definitions["HB_HAVE_DIRECTWRITE"] = "On"
             else:
                 cmake.definitions["HB_HAVE_UNISCRIBE"] = "On"
-        # todo
-        #cmake.definitions["HB_HAVE_ICU"] = "On"
+
+        cmake.definitions["HB_HAVE_ICU"] = self.options.with_icu
 
         cmake.configure(source_dir="..", build_dir="build")
         cmake.build()

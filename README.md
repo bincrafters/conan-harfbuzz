@@ -1,44 +1,66 @@
-[![Build Status](https://travis-ci.org/bincrafters/conan-harfbuzz.svg)](https://travis-ci.org/bincrafters/conan-harfbuzz)
+[![Download](https://api.bintray.com/packages/bincrafters/public-conan/harfbuzz%3Abincrafters/images/download.svg) ](https://bintray.com/bincrafters/public-conan/harfbuzz%3Abincrafters/_latestVersion)
+[![Build Status](https://travis-ci.org/bincrafters/conan-harfbuzz.svg?branch=stable%2F1.7.2)](https://travis-ci.org/bincrafters/conan-harfbuzz)
+[![Build status](https://ci.appveyor.com/api/projects/status/github/bincrafters/conan-harfbuzz?branch=stable%2F1.7.2&svg=true)](https://ci.appveyor.com/project/bincrafters/conan-harfbuzz)
 
+[Conan.io](https://conan.io) package recipe for [*harfbuzz*](http://harfbuzz.org).
 
-# conan-harfbuzz
+HarfBuzz is an OpenType text shaping engine.
 
-[Conan.io](https://conan.io) package for H[arfbuzz library](http://harfbuzz.org).
+The packages generated with this **conanfile** can be found on [Bintray](https://bintray.com/bincrafters/public-conan/harfbuzz%3Abincrafters).
 
-The packages generated with this **conanfile** can be found in [conan.io](https://conan.io/source/harfbuzz/1.7.1/bincrafters/stable).
-
-## Build packages
-
-Download conan client from [Conan.io](https://conan.io) and run:
-
-    $ python build.py
-
-## Upload packages to server
-
-    $ conan upload harfbuzz/1.7.1@bincrafters/stable --all
-    
-## Reuse the packages
+## For Users: Use this package
 
 ### Basic setup
 
-    $ conan install harfbuzz/1.7.1@bincrafters/stable
-    
+    $ conan install harfbuzz/1.7.2@bincrafters/stable
+
 ### Project setup
 
 If you handle multiple dependencies in your project is better to add a *conanfile.txt*
-    
-    [requires]
-    harfbuzz/1.7.1@bincrafters/stable
 
-    [options]
-    harfbuzz:shared=true # false
-    
+    [requires]
+    harfbuzz/1.7.2@bincrafters/stable
+
     [generators]
-    txt
     cmake
 
-Complete the installation of requirements for your project running:</small></span>
+Complete the installation of requirements for your project running:
 
-    conan install .
+    $ mkdir build && cd build && conan install ..
 
-Project setup installs the library (and all his dependencies) and generates the files *conanbuildinfo.txt* and *conanbuildinfo.cmake* with all the paths and variables that you need to link with your dependencies.
+Note: It is recommended that you run conan install from a build directory and not the root of the project directory.  This is because conan generates *conanbuildinfo* files specific to a single build configuration which by default comes from an autodetected default profile located in ~/.conan/profiles/default .  If you pass different build configuration options to conan install, it will generate different *conanbuildinfo* files.  Thus, they should not be added to the root of the project, nor committed to git.
+
+## For Packagers: Publish this Package
+
+The example below shows the commands used to publish to bincrafters conan repository. To publish to your own conan respository (for example, after forking this git repository), you will need to change the commands below accordingly.
+
+## Build and package
+
+The following command both runs all the steps of the conan file, and publishes the package to the local system cache.  This includes downloading dependencies from "build_requires" and "requires" , and then running the build() method.
+
+    $ conan create bincrafters/stable
+
+
+### Available Options
+| Option        | Default | Possible Values  |
+| ------------- |:----------------- |:------------:|
+| shared      |                        |  [True, False] |
+| fPIC      |                        |  [True, False] |
+| with_freetype      |                        |  [True, False] |
+| with_icu      |                        |  [True, False] |
+
+## Add Remote
+
+    $ conan remote add bincrafters "https://api.bintray.com/conan/bincrafters/public-conan"
+
+## Upload
+
+    $ conan upload harfbuzz/1.7.2@bincrafters/stable --all -r bincrafters
+
+
+## Conan Recipe License
+
+NOTE: The conan recipe license applies only to the files of this recipe, which can be used to build and package harfbuzz.
+It does *not* in any way apply or is related to the actual software being packaged.
+
+[LICENSE](https://github.com/bincrafters/conan-harfbuzz.git/blob/testing/1.7.2/LICENSE.md)
