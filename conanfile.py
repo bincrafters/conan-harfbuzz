@@ -7,16 +7,13 @@ import os
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
-    version = "1.7.1"
+    version = "1.7.4"
     homepage = "http://harfbuzz.org"
     description="HarfBuzz is an OpenType text shaping engine."
-
     url="http://github.com/bincrafters/conan-harfbuzz"
-    license="MIT"
-
     settings = "os", "arch", "compiler", "build_type"
-    short_paths = True
     generators = "cmake"
+    short_paths = True
 
     options = {"shared": [True, False],
                "fPIC": [True, False],
@@ -75,14 +72,11 @@ class HarfbuzzConan(ConanFile):
 
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
 
-        os_info = tools.OSInfo()
 
         # UniScribe was replaced by DirectWrite after Windows 7 (although still maintained)
-        if os_info.is_windows == "Windows":
-            if os_info.os_version >= "7":
-                cmake.definitions["HB_HAVE_DIRECTWRITE"] = "On"
-            else:
-                cmake.definitions["HB_HAVE_UNISCRIBE"] = "On"
+        if compiler == 'Visual Studio':
+            cmake.definitions["HB_HAVE_DIRECTWRITE"] = "On"
+            cmake.definitions["HB_HAVE_UNISCRIBE"] = "On"
         # todo
         #cmake.definitions["HB_HAVE_ICU"] = "On"
 
@@ -98,12 +92,10 @@ class HarfbuzzConan(ConanFile):
         self.cpp_info.libs = ["harfbuzz"]
 
         os_info = tools.OSInfo()
-        if self.settings.os == "Windows" and not self.options.shared:
-            if os_info.os_version >= "7":
-                self.cpp_info.libs.append("dwrite")
-                self.cpp_info.libs.append("rpcrt4")
-            else:
-                self.cpp_info.libs.append("usp10")
+        if self.settings.compiler == 'Visual Studio' and not self.options.shared:
+            self.cpp_info.libs.append("dwrite")
+            self.cpp_info.libs.append("rpcrt4")
+            self.cpp_info.libs.append("usp10")
 
 
                 
