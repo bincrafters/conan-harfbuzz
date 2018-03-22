@@ -33,9 +33,7 @@ class HarfbuzzConan(ConanFile):
     build_subfolder = "build_subfolder"
 
     def build_requirements(self):
-        if self.settings.os == "Windows":
-            self.build_requires("ragel_installer/6.10@bincrafters/stable")
-        elif tools.OSInfo().is_linux:
+        if tools.OSInfo().is_linux:
             installer = SystemPackageTool()
             installer.install("ragel")
 
