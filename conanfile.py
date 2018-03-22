@@ -85,7 +85,7 @@ class HarfbuzzConan(ConanFile):
 
     def package(self):
         self.copy("FindHarfbuzz.cmake", dst="res")
-        self.copy("COPYING", dst="licenses", keep_path=False)
+        self.copy("COPYING", dst="licenses", src=self.source_subfolder)
         cmake = self.configure_cmake()
         cmake.install()
 
