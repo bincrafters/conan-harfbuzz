@@ -28,7 +28,7 @@ class HarfbuzzConan(ConanFile):
     default_options = ("shared=False", "fPIC=True", "with_freetype=False",
                        "with_icu=False", "with_glib=False", "with_graphite2=False")
     exports_sources = ("CMakeLists.txt", "cmake.patch")
-    exports = "FindHarfbuzz.cmake"
+    exports = "FindHarfBuzz.cmake"
     source_subfolder = "source_subfolder"
     build_subfolder = "build_subfolder"
 
@@ -39,7 +39,7 @@ class HarfbuzzConan(ConanFile):
 
     def requirements(self):
         if self.options.with_freetype:
-            self.build_requires("freetype/2.8.1@bincrafters/stable")
+            self.requires.add("freetype/2.9@bincrafters/stable")
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -84,7 +84,7 @@ class HarfbuzzConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("FindHarfbuzz.cmake")
+        self.copy("FindHarfBuzz.cmake")
         self.copy("COPYING", dst="licenses", src=self.source_subfolder)
         cmake = self.configure_cmake()
         cmake.install()
