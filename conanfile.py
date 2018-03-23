@@ -39,7 +39,7 @@ class HarfbuzzConan(ConanFile):
 
     def requirements(self):
         if self.options.with_freetype:
-            self.build_requires("freetype/2.8.1@bincrafters/stable")
+            self.build_requires.add("freetype/2.9@bincrafters/stable")
 
     def config_options(self):
         if self.settings.os == "Windows":
