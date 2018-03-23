@@ -28,7 +28,7 @@ class HarfbuzzConan(ConanFile):
     default_options = ("shared=False", "fPIC=True", "with_freetype=False",
                        "with_icu=False", "with_glib=False", "with_graphite2=False")
     exports_sources = ("CMakeLists.txt", "cmake.patch")
-    exports = "FindHarfbuzz.cmake"
+    exports = "FindHarfBuzz.cmake"
     source_subfolder = "source_subfolder"
     build_subfolder = "build_subfolder"
 
@@ -84,7 +84,7 @@ class HarfbuzzConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("FindHarfbuzz.cmake")
+        self.copy("FindHarfBuzz.cmake")
         self.copy("COPYING", dst="licenses", src=self.source_subfolder)
         cmake = self.configure_cmake()
         cmake.install()
