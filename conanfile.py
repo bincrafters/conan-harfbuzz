@@ -20,13 +20,9 @@ class HarfbuzzConan(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
-        "with_freetype": [True, False],
-        "with_icu": [True, False],
-        "with_glib": [True, False],
-        "with_graphite2": [True, False]
+        "with_freetype": [True, False]
     }
-    default_options = ("shared=False", "fPIC=True", "with_freetype=False",
-                       "with_icu=False", "with_glib=False", "with_graphite2=False")
+    default_options = ("shared=False", "fPIC=True", "with_freetype=False")
     exports_sources = ("CMakeLists.txt", "cmake.patch")
     exports = "FindHarfBuzz.cmake"
     source_subfolder = "source_subfolder"
@@ -40,6 +36,9 @@ class HarfbuzzConan(ConanFile):
     def requirements(self):
         if self.options.with_freetype:
             self.requires.add("freetype/2.9@bincrafters/stable")
+
+    def configure(self):
+        del self.settings.compiler.libcxx
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -73,9 +72,6 @@ class HarfbuzzConan(ConanFile):
         if self.settings.os != "Windows":
             cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
-        cmake.definitions["HB_HAVE_ICU"] = self.options.with_icu
-        cmake.definitions["HB_HAVE_GLIB"] = self.options.with_glib
-        cmake.definitions["HB_HAVE_GRAPHITE2"] = self.options.with_graphite2
         cmake.configure(build_folder=self.build_subfolder)
         return cmake
 
