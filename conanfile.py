@@ -8,7 +8,7 @@ import os
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
-    version = "1.7.6"
+    version = "1.7.4"
     description = "HarfBuzz is an OpenType text shaping engine."
     homepage = "http://harfbuzz.org"
     url = "http://github.com/bincrafters/conan-harfbuzz"
@@ -23,7 +23,7 @@ class HarfbuzzConan(ConanFile):
         "with_freetype": [True, False]
     }
     default_options = ("shared=False", "fPIC=True", "with_freetype=False")
-    exports_sources = ("CMakeLists.txt", "cmake.patch")
+    exports_sources = "CMakeLists.txt"
     exports = "FindHarfBuzz.cmake"
     source_subfolder = "source_subfolder"
     build_subfolder = "build_subfolder"
@@ -37,9 +37,6 @@ class HarfbuzzConan(ConanFile):
         if self.options.with_freetype:
             self.requires.add("freetype/2.9.0@bincrafters/stable")
 
-    def configure(self):
-        del self.settings.compiler.libcxx
-
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
@@ -49,7 +46,8 @@ class HarfbuzzConan(ConanFile):
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version))
         extracted_dir = self.name + "-" + self.version
         os.rename(extracted_dir, self.source_subfolder)
-        tools.patch(base_path=self.source_subfolder, patch_file="cmake.patch")
+        cmake_file = os.path.join(self.source_subfolder, "CMakeLists.txt")
+        tools.replace_in_file(cmake_file, "add_subdirectory(test)", "")
 
     def configure_cmake_compiler_flags(self, cmake):
         flags = []
