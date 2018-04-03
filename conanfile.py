@@ -24,7 +24,7 @@ class HarfbuzzConan(ConanFile):
     }
     default_options = ("shared=False", "fPIC=True", "with_freetype=False")
     exports_sources = ("CMakeLists.txt", "cmake.patch")
-    exports = "FindHarfBuzz.cmake"
+    exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
     source_subfolder = "source_subfolder"
     build_subfolder = "build_subfolder"
 
