@@ -24,7 +24,7 @@ class HarfbuzzConan(ConanFile):
     }
     default_options = ("shared=False", "fPIC=True", "with_freetype=False")
     exports_sources = "CMakeLists.txt"
-    exports = "FindHarfBuzz.cmake"
+    exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
     source_subfolder = "source_subfolder"
     build_subfolder = "build_subfolder"
 
@@ -67,8 +67,6 @@ class HarfbuzzConan(ConanFile):
         cmake = CMake(self)
         cmake = self.configure_cmake_compiler_flags(cmake)
         cmake = self.configure_cmake_macos(cmake)
-        if self.settings.os != "Windows":
-            cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
         cmake.configure(build_folder=self.build_subfolder)
         return cmake
