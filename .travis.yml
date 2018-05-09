@@ -30,12 +30,15 @@ matrix:
       - <<: *osx
         osx_image: xcode9
         env: CONAN_APPLE_CLANG_VERSIONS=9.0
+      - <<: *osx
+        osx_image: xcode9.3
+        env: CONAN_APPLE_CLANG_VERSIONS=9.1
 
 install:
   - chmod +x .travis/install.sh
   - ./.travis/install.sh
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then export PATH=$(brew --prefix)'/bin:'$(brew --prefix)'/sbin':$PATH; fi
-  
+
 script:
   - chmod +x .travis/run.sh
   - ./.travis/run.sh
