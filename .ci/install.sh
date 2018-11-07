@@ -8,18 +8,18 @@ if [[ "$(uname -s)" == 'Darwin' ]]; then
     brew outdated pyenv || brew upgrade pyenv
     brew install pyenv-virtualenv
     brew install cmake || true
-    brew install ragel || true
 
     if which pyenv > /dev/null; then
         eval "$(pyenv init -)"
     fi
 
-    pyenv install 2.7.10
-    pyenv virtualenv 2.7.10 conan
+    pyenv install 3.7.0
+    pyenv virtualenv 3.7.0 conan
     pyenv rehash
     pyenv activate conan
 fi
 
 pip install conan --upgrade
-pip install conan_package_tools # It install conan too
+pip install conan_package_tools bincrafters_package_tools
+
 conan user

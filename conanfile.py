@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 from conans import ConanFile, CMake, tools
-from conans.tools import SystemPackageTool
 import os
+
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
     version = "1.7.2"
     homepage = "http://harfbuzz.org"
-    description="HarfBuzz is an OpenType text shaping engine."
+    description = "HarfBuzz is an OpenType text shaping engine."
 
-    url="http://github.com/bincrafters/conan-harfbuzz"
-    license="MIT"
+    url = "http://github.com/bincrafters/conan-harfbuzz"
+    license = "MIT"
 
     settings = "os", "arch", "compiler", "build_type"
     generators = "cmake"
@@ -23,27 +23,20 @@ class HarfbuzzConan(ConanFile):
                "with_freetype": [True, False],
                "with_icu": [True, False]}
 
-    default_options = "shared=False", \
-                      "fPIC=True", \
-                      "with_freetype=False", \
-                      "with_icu=False"
+    default_options = {'shared': False, 'fPIC': True, 'with_freetype': False, 'with_icu': False}
 
     exports_sources = "CMakeLists.txt"
     exports = "FindHarfbuzz.cmake"
 
-    source_url="https://github.com/behdad/harfbuzz/archive/%s.tar.gz" % version
+    _source_subfolder = "source_subfolder"
+    _build_subfolder = "build_subfolder"
+
+    def config_options(self):
+        if self.settings.os == 'Windows':
+            del self.options.fPIC
 
     def build_requirements(self):
-        if self.settings.compiler == "Visual Studio":
-            self.build_requires("ragel_installer/6.10@bincrafters/stable")
-        else:
-            pack_name = None
-            if tools.OSInfo().is_linux:
-                pack_name = "ragel"
-
-            if pack_name:
-                installer = SystemPackageTool()
-                installer.install(pack_name)
+        self.build_requires("ragel_installer/6.10@bincrafters/stable")
 
         if self.options.with_freetype:
             self.build_requires("freetype/2.8.1@bincrafters/stable")
@@ -52,11 +45,10 @@ class HarfbuzzConan(ConanFile):
             self.build_requires("icu/60.1@bincrafters/stable")
 
     def source(self):
-        tools.get(self.source_url)
-        os.rename('{name}-{version}'.format(name=self.name, version=self.version),
-                  'sources')
+        tools.get("https://github.com/behdad/harfbuzz/archive/%s.tar.gz" % self.version)
+        os.rename('{name}-{version}'.format(name=self.name, version=self.version), self._source_subfolder)
 
-    def build(self):
+    def _configure_cmake(self):
         cmake = CMake(self)
         
         if str(self.settings.os) in ["Macos", "iOS", "watchOS", "tvOS"]:
@@ -73,8 +65,6 @@ class HarfbuzzConan(ConanFile):
         cmake.definitions["CMAKE_C_FLAGS"] = " ".join(flags)
         cmake.definitions["CMAKE_CXX_FLAGS"] = cmake.definitions["CMAKE_C_FLAGS"]
 
-        cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
-
         cmake.definitions["BUILD_SHARED_LIBS"] = self.options.shared
 
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
@@ -90,13 +80,18 @@ class HarfbuzzConan(ConanFile):
 
         cmake.definitions["HB_HAVE_ICU"] = self.options.with_icu
 
-        cmake.configure(source_dir="..", build_dir="build")
+        cmake.configure(source_dir="..", build_dir=self._build_subfolder)
+        return cmake
+
+    def build(self):
+        cmake = self._configure_cmake()
         cmake.build()
-        cmake.install()
 
     def package(self):
+        cmake = self._configure_cmake()
+        cmake.install()
         self.copy("FindHarfbuzz.cmake", ".", ".")
-        self.copy("COPYING", dst="licenses", keep_path=False)
+        self.copy("COPYING", src=self._source_subfolder, dst="licenses", keep_path=False)
 
     def package_info(self):
         self.cpp_info.libs = ["harfbuzz"]
@@ -108,6 +103,3 @@ class HarfbuzzConan(ConanFile):
                 self.cpp_info.libs.append("rpcrt4")
             else:
                 self.cpp_info.libs.append("usp10")
-
-
-                
