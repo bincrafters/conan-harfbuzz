@@ -8,7 +8,7 @@ import os
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
-    version = "1.7.6"
+    version = "2.3.0"
     description = "HarfBuzz is an OpenType text shaping engine."
     homepage = "http://harfbuzz.org"
     url = "http://github.com/bincrafters/conan-harfbuzz"
