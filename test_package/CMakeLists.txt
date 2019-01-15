@@ -8,12 +8,6 @@ conan_basic_setup()
 
 find_package(HarfBuzz 1.7.6 REQUIRED)
 
-if (APPLE)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework CoreFoundation")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework CoreGraphics")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework CoreText")
-endif()
-
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/example.ttf
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
