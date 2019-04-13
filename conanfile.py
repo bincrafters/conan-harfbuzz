@@ -23,7 +23,7 @@ class HarfbuzzConan(ConanFile):
         "with_freetype": [True, False],
         "with_icu": [True, False]
     }
-    default_options = {"shared": False, "fPIC": True, "with_freetype": False, "with_icu": False)
+    default_options = {"shared": False, "fPIC": True, "with_freetype": False, "with_icu": False}
     exports_sources = ("CMakeLists.txt")
     exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
     source_subfolder = "source_subfolder"
