@@ -77,8 +77,6 @@ class HarfbuzzConan(ConanFile):
         cmake = CMake(self)
         cmake = self.configure_cmake_compiler_flags(cmake)
         cmake = self.configure_cmake_macos(cmake)
-        if self.settings.os != "Windows":
-            cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
         cmake.definitions["HB_BUILD_TESTS"] = False
         cmake.definitions["HB_HAVE_ICU"] = self.options.with_icu
