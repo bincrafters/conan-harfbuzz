@@ -26,8 +26,8 @@ class HarfbuzzConan(ConanFile):
     default_options = {"shared": False, "fPIC": True, "with_freetype": True, "with_icu": False}
     exports_sources = ("CMakeLists.txt")
     exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
-    source_subfolder = "source_subfolder"
-    build_subfolder = "build_subfolder"
+    _source_subfolder = "source_subfolder"
+    _build_subfolder = "build_subfolder"
 
     def build_requirements(self):
         if tools.OSInfo().is_linux:
@@ -51,14 +51,14 @@ class HarfbuzzConan(ConanFile):
         source_url = "https://github.com/harfbuzz/harfbuzz"
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version))
         extracted_dir = self.name + "-" + self.version
-        os.rename(extracted_dir, self.source_subfolder)
+        os.rename(extracted_dir, self._source_subfolder)
 
         if self.version == "2.4.0":
             tools.replace_in_file("source_subfolder/src/hb-coretext.cc", 
                 "bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);",
                 "HB_UNUSED bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);")
 
-    def configure_cmake_compiler_flags(self, cmake):
+    def _configure_cmake_compiler_flags(self, cmake):
         flags = []
         compiler = str(self.settings.compiler)
         if compiler in ("clang", "apple-clang"):
@@ -68,15 +68,15 @@ class HarfbuzzConan(ConanFile):
         
         return cmake
 
-    def configure_cmake_macos(self, cmake):
+    def _configure_cmake_macos(self, cmake):
         if str(self.settings.os) in ["Macos", "iOS", "watchOS", "tvOS"]:
             cmake.definitions["CMAKE_MACOSX_RPATH"] = True
         return cmake
 
-    def configure_cmake(self):
+    def _configure_cmake(self):
         cmake = CMake(self)
-        cmake = self.configure_cmake_compiler_flags(cmake)
-        cmake = self.configure_cmake_macos(cmake)
+        cmake = self._configure_cmake_compiler_flags(cmake)
+        cmake = self._configure_cmake_macos(cmake)
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
         cmake.definitions["HB_BUILD_TESTS"] = False
         cmake.definitions["HB_HAVE_ICU"] = self.options.with_icu
@@ -84,17 +84,17 @@ class HarfbuzzConan(ConanFile):
         if self.options.with_icu:
             cmake.definitions["CMAKE_CXX_STANDARD"] = "17"
 
-        cmake.configure(build_folder=self.build_subfolder)
+        cmake.configure(build_folder=self._build_subfolder)
         return cmake
 
     def build(self):
-        cmake = self.configure_cmake()
+        cmake = self._configure_cmake()
         cmake.build()
 
     def package(self):
         self.copy("FindHarfBuzz.cmake")
-        self.copy("COPYING", dst="licenses", src=self.source_subfolder)
-        cmake = self.configure_cmake()
+        self.copy("COPYING", dst="licenses", src=self._source_subfolder)
+        cmake = self._configure_cmake()
         cmake.install()
 
     def package_info(self):
