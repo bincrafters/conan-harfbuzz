@@ -10,22 +10,30 @@ class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
     version = "2.4.0"
     description = "HarfBuzz is an OpenType text shaping engine."
-    homepage = "http://harfbuzz.org"
+    topics = ("conan", "harfbuzz", "opentype", "text", "engine")
     url = "http://github.com/bincrafters/conan-harfbuzz"
-    license = "MIT"
+    homepage = "http://harfbuzz.org"
     author = "Bincrafters <bincrafters@gmail.com>"
-    settings = "os", "arch", "compiler", "build_type"
+    license = "MIT"
+    exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
+    exports_sources = ["CMakeLists.txt"]
     generators = "cmake"
     short_paths = True
+
+    settings = "os", "arch", "compiler", "build_type"
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
         "with_freetype": [True, False],
         "with_icu": [True, False]
     }
-    default_options = {"shared": False, "fPIC": True, "with_freetype": True, "with_icu": False}
-    exports_sources = ("CMakeLists.txt")
-    exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+        "with_freetype": True,
+        "with_icu": False
+    }
+
     _source_subfolder = "source_subfolder"
     _build_subfolder = "build_subfolder"
 
@@ -49,12 +57,13 @@ class HarfbuzzConan(ConanFile):
 
     def source(self):
         source_url = "https://github.com/harfbuzz/harfbuzz"
-        tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version))
+        sha256 = "dc3132a479c8c4fa1c9dd09d433a3ab9b0d2f302f844a764d57faf1629bfb9c5"
+        tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version), sha256=sha256)
         extracted_dir = self.name + "-" + self.version
         os.rename(extracted_dir, self._source_subfolder)
 
         if self.version == "2.4.0":
-            tools.replace_in_file("source_subfolder/src/hb-coretext.cc", 
+            tools.replace_in_file("source_subfolder/src/hb-coretext.cc",
                 "bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);",
                 "HB_UNUSED bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);")
 
@@ -65,7 +74,7 @@ class HarfbuzzConan(ConanFile):
             flags.append("-Wno-deprecated-declarations")
         cmake.definitions["CMAKE_C_FLAGS"] = " ".join(flags)
         cmake.definitions["CMAKE_CXX_FLAGS"] = cmake.definitions["CMAKE_C_FLAGS"]
-        
+
         return cmake
 
     def _configure_cmake_macos(self, cmake):
