@@ -1,8 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from conans import ConanFile, CMake, tools
-from conans.tools import SystemPackageTool
 import os
 
 
@@ -10,28 +8,28 @@ class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
     version = "2.3.0"
     description = "HarfBuzz is an OpenType text shaping engine."
-    homepage = "http://harfbuzz.org"
+    homepage = "https://github.com/harfbuzz/harfbuzz"
     url = "http://github.com/bincrafters/conan-harfbuzz"
     license = "MIT"
     author = "Bincrafters <bincrafters@gmail.com>"
     settings = "os", "arch", "compiler", "build_type"
     generators = "cmake"
+    topics = ("conan", "harfbuzz", "text", "open-type", "text-engine")
     short_paths = True
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
         "with_freetype": [True, False]
     }
-    default_options = ("shared=False", "fPIC=True", "with_freetype=False")
-    exports_sources = ("CMakeLists.txt")
+    default_options = {'shared': False, 'fPIC': True, 'with_freetype': False}
     exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
-    source_subfolder = "source_subfolder"
-    build_subfolder = "build_subfolder"
+    exports_sources = ["CMakeLists.txt"]
+    _source_subfolder = "source_subfolder"
+    _build_subfolder = "build_subfolder"
 
     def build_requirements(self):
-        if tools.OSInfo().is_linux:
-            installer = SystemPackageTool()
-            installer.install("ragel")
+        if self.settings.os == "Linux" and not tools.which("ragel"):
+            self.build_requires.add("ragel_installer/6.10@bincrafters/stable")
 
     def requirements(self):
         if self.options.with_freetype:
@@ -45,12 +43,12 @@ class HarfbuzzConan(ConanFile):
             del self.options.fPIC
 
     def source(self):
-        source_url = "https://github.com/harfbuzz/harfbuzz"
-        tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version))
+        sha256 = "4d6b73c4bbcf1f986ab63fb9fed853ef725698d7f1e85bc389efca2640ddb135"
+        tools.get("{0}/archive/{1}.tar.gz".format(self.homepage, self.version), sha256=sha256)
         extracted_dir = self.name + "-" + self.version
-        os.rename(extracted_dir, self.source_subfolder)
+        os.rename(extracted_dir, self._source_subfolder)
 
-    def configure_cmake_compiler_flags(self, cmake):
+    def _configure_cmake_compiler_flags(self, cmake):
         flags = []
         compiler = str(self.settings.compiler)
         if compiler in ("clang", "apple-clang"):
@@ -59,30 +57,28 @@ class HarfbuzzConan(ConanFile):
         cmake.definitions["CMAKE_CXX_FLAGS"] = cmake.definitions["CMAKE_C_FLAGS"]
         return cmake
 
-    def configure_cmake_macos(self, cmake):
+    def _configure_cmake_macos(self, cmake):
         if str(self.settings.os) in ["Macos", "iOS", "watchOS", "tvOS"]:
             cmake.definitions["CMAKE_MACOSX_RPATH"] = True
         return cmake
 
-    def configure_cmake(self):
+    def _configure_cmake(self):
         cmake = CMake(self)
-        cmake = self.configure_cmake_compiler_flags(cmake)
-        cmake = self.configure_cmake_macos(cmake)
-        if self.settings.os != "Windows":
-            cmake.definitions['CMAKE_POSITION_INDEPENDENT_CODE'] = self.options.fPIC
+        cmake = self._configure_cmake_compiler_flags(cmake)
+        cmake = self._configure_cmake_macos(cmake)
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
         cmake.definitions["HB_BUILD_TESTS"] = False
-        cmake.configure(build_folder=self.build_subfolder)
+        cmake.configure(build_folder=self._build_subfolder)
         return cmake
 
     def build(self):
-        cmake = self.configure_cmake()
+        cmake = self._configure_cmake()
         cmake.build()
 
     def package(self):
         self.copy("FindHarfBuzz.cmake")
-        self.copy("COPYING", dst="licenses", src=self.source_subfolder)
-        cmake = self.configure_cmake()
+        self.copy("COPYING", dst="licenses", src=self._source_subfolder)
+        cmake = self._configure_cmake()
         cmake.install()
 
     def package_info(self):
