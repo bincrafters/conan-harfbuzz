@@ -1,8 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from conans import ConanFile, CMake, tools
-from conans.tools import SystemPackageTool
 import os
 
 
@@ -38,9 +36,8 @@ class HarfbuzzConan(ConanFile):
     _build_subfolder = "build_subfolder"
 
     def build_requirements(self):
-        if tools.OSInfo().is_linux:
-            installer = SystemPackageTool()
-            installer.install("ragel")
+        if tools.os_info.is_linux:
+            self.build_requires("ragel_installer/6.10@bincrafters/stable")
 
     def requirements(self):
         if self.options.with_freetype:
