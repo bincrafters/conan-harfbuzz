@@ -35,10 +35,6 @@ class HarfbuzzConan(ConanFile):
     _source_subfolder = "source_subfolder"
     _build_subfolder = "build_subfolder"
 
-    def build_requirements(self):
-        if tools.os_info.is_linux:
-            self.build_requires("ragel_installer/6.10@bincrafters/stable")
-
     def requirements(self):
         if self.options.with_freetype:
             self.requires.add("freetype/2.9.1@bincrafters/stable")
