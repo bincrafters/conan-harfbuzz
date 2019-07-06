@@ -23,13 +23,15 @@ class HarfbuzzConan(ConanFile):
         "shared": [True, False],
         "fPIC": [True, False],
         "with_freetype": [True, False],
-        "with_icu": [True, False]
+        "with_icu": [True, False],
+        "with_glib": [True, False],
     }
     default_options = {
         "shared": False,
         "fPIC": True,
         "with_freetype": True,
-        "with_icu": False
+        "with_icu": False,
+        "with_glib": True
     }
 
     _source_subfolder = "source_subfolder"
@@ -37,9 +39,11 @@ class HarfbuzzConan(ConanFile):
 
     def requirements(self):
         if self.options.with_freetype:
-            self.requires.add("freetype/2.9.1@bincrafters/stable")
+            self.requires.add("freetype/2.10.0@bincrafters/stable")
         if self.options.with_icu:
-            self.requires.add("icu/63.1@bincrafters/stable")
+            self.requires.add("icu/64.2@bincrafters/stable")
+        if self.options.with_glib:
+            self.requires.add("glib/2.58.3@bincrafters/stable")
 
     def configure(self):
         del self.settings.compiler.libcxx
@@ -82,6 +86,7 @@ class HarfbuzzConan(ConanFile):
         cmake.definitions["HB_HAVE_FREETYPE"] = self.options.with_freetype
         cmake.definitions["HB_BUILD_TESTS"] = False
         cmake.definitions["HB_HAVE_ICU"] = self.options.with_icu
+        cmake.definitions["HB_HAVE_GLIB"] = self.options.with_glib
 
         if self.options.with_icu:
             cmake.definitions["CMAKE_CXX_STANDARD"] = "17"
