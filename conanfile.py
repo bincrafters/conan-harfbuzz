@@ -6,7 +6,7 @@ import os
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
-    version = "2.4.0"
+    version = "2.6.1"
     description = "HarfBuzz is an OpenType text shaping engine."
     topics = ("conan", "harfbuzz", "opentype", "text", "engine")
     url = "http://github.com/bincrafters/conan-harfbuzz"
@@ -54,15 +54,10 @@ class HarfbuzzConan(ConanFile):
 
     def source(self):
         source_url = "https://github.com/harfbuzz/harfbuzz"
-        sha256 = "dc3132a479c8c4fa1c9dd09d433a3ab9b0d2f302f844a764d57faf1629bfb9c5"
+        sha256 = "8a5eb4ab0dc1634040307eecbc8cf1f1b65924a8b679aa346b49800aac3be692"
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version), sha256=sha256)
         extracted_dir = self.name + "-" + self.version
         os.rename(extracted_dir, self._source_subfolder)
-
-        if self.version == "2.4.0":
-            tools.replace_in_file("source_subfolder/src/hb-coretext.cc",
-                "bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);",
-                "HB_UNUSED bool backward = HB_DIRECTION_IS_BACKWARD (buffer->props.direction);")
 
     def _configure_cmake_compiler_flags(self, cmake):
         flags = []
