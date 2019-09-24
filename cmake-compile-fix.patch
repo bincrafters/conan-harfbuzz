@@ -1,0 +1,1130 @@
+diff -Naur harfbuzz-2.6.1/.circleci/config.yml harfbuzz-2.6.1.new/.circleci/config.yml
+--- harfbuzz-2.6.1/.circleci/config.yml	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/.circleci/config.yml	2019-09-14 14:47:20.164738622 +0200
+@@ -22,15 +22,16 @@
+       - run: make -j4
+       - run: make check || .ci/fail.sh
+ 
+-  macos-10.14.3-aat-fonts:
++  macos-10.14.4-aat-fonts:
+     macos:
+-      xcode: "10.2.0"
++      xcode: "11.0.0"
+     steps:
+       - checkout
+-      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install wget autoconf automake libtool pkg-config ragel freetype glib cairo icu4c graphite2
++      - run: HOMEBREW_NO_AUTO_UPDATE=1 brew install wget autoconf automake libtool pkg-config ragel freetype glib cairo icu4c graphite2 cmake
+       - run: export PKG_CONFIG_PATH="/usr/local/opt/icu4c/lib/pkgconfig:/usr/local/opt/libffi/lib/pkgconfig" && ./autogen.sh --with-freetype --with-glib --with-gobject --with-cairo --with-icu --with-coretext --with-graphite2
+       - run: make -j4
+       - run: make check || .ci/fail.sh
++      - run: cmake -Bbuild -H. -DHB_HAVE_CORETEXT=1 -DHB_BUILD_TESTS=0 && cmake --build build
+ 
+   distcheck:
+     docker:
+@@ -306,7 +307,7 @@
+       # macOS
+       - macos-10.12.6-aat-fonts
+       - macos-10.13.6-aat-fonts
+-      - macos-10.14.3-aat-fonts
++      - macos-10.14.4-aat-fonts
+ 
+       # both autotools and cmake
+       - distcheck
+diff -Naur harfbuzz-2.6.1/src/hb-aat-fdsc-table.hh harfbuzz-2.6.1.new/src/hb-aat-fdsc-table.hh
+--- harfbuzz-2.6.1/src/hb-aat-fdsc-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-aat-fdsc-table.hh	2019-09-12 12:00:03.540210643 +0200
+@@ -65,7 +65,7 @@
+   protected:
+   Tag		tag;		/* The 4-byte table tag name. */
+   union {
+-  Fixed		value;		/* The value for the descriptor tag. */
++  HBFixed		value;		/* The value for the descriptor tag. */
+   HBUINT32	nalfType;	/* If the tag is `nalf`, see non_alphabetic_value_t */
+   } u;
+   public:
+@@ -108,7 +108,7 @@
+   }
+ 
+   protected:
+-  Fixed		version;	/* Version number of the font descriptors
++  HBFixed		version;	/* Version number of the font descriptors
+ 				 * table (0x00010000 for the current version). */
+   LArrayOf<FontDescriptor>
+ 		descriptors;	/* List of tagged-coordinate pairs style descriptors
+diff -Naur harfbuzz-2.6.1/src/hb-aat-layout-bsln-table.hh harfbuzz-2.6.1.new/src/hb-aat-layout-bsln-table.hh
+--- harfbuzz-2.6.1/src/hb-aat-layout-bsln-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-aat-layout-bsln-table.hh	2019-09-14 14:47:20.146738537 +0200
+@@ -82,7 +82,7 @@
+   }
+ 
+   protected:
+-  GlyphID	stdGlyph;	/* The specific glyph index number in this
++  HBGlyphID	stdGlyph;	/* The specific glyph index number in this
+ 				 * font that is used to set the baseline values.
+ 				 * This is the standard glyph.
+ 				 * This glyph must contain a set of control points
+@@ -105,7 +105,7 @@
+   }
+ 
+   protected:
+-  GlyphID	stdGlyph;	/* ditto */
++  HBGlyphID	stdGlyph;	/* ditto */
+   HBUINT16	ctlPoints[32];	/* ditto */
+   Lookup<HBUINT16>
+ 		lookupTable;	/* Lookup table that maps glyphs to their
+diff -Naur harfbuzz-2.6.1/src/hb-aat-layout-common.hh harfbuzz-2.6.1.new/src/hb-aat-layout-common.hh
+--- harfbuzz-2.6.1/src/hb-aat-layout-common.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-aat-layout-common.hh	2019-09-14 14:47:20.147738542 +0200
+@@ -93,8 +93,8 @@
+     return_trace (c->check_struct (this) && value.sanitize (c, base));
+   }
+ 
+-  GlyphID	last;		/* Last GlyphID in this segment */
+-  GlyphID	first;		/* First GlyphID in this segment */
++  HBGlyphID	last;		/* Last GlyphID in this segment */
++  HBGlyphID	first;		/* First GlyphID in this segment */
+   T		value;		/* The lookup value (only one) */
+   public:
+   DEFINE_SIZE_STATIC (4 + T::static_size);
+@@ -162,8 +162,8 @@
+ 		  valuesZ.sanitize (c, base, last - first + 1, hb_forward<Ts> (ds)...));
+   }
+ 
+-  GlyphID	last;		/* Last GlyphID in this segment */
+-  GlyphID	first;		/* First GlyphID in this segment */
++  HBGlyphID	last;		/* Last GlyphID in this segment */
++  HBGlyphID	first;		/* First GlyphID in this segment */
+   NNOffsetTo<UnsizedArrayOf<T>>
+ 		valuesZ;	/* A 16-bit offset from the start of
+ 				 * the table to the data. */
+@@ -222,7 +222,7 @@
+     return_trace (c->check_struct (this) && value.sanitize (c, base));
+   }
+ 
+-  GlyphID	glyph;		/* Last GlyphID */
++  HBGlyphID	glyph;		/* Last GlyphID */
+   T		value;		/* The lookup value (only one) */
+   public:
+   DEFINE_SIZE_STATIC (2 + T::static_size);
+@@ -284,7 +284,7 @@
+ 
+   protected:
+   HBUINT16	format;		/* Format identifier--format = 8 */
+-  GlyphID	firstGlyph;	/* First glyph index included in the trimmed array. */
++  HBGlyphID	firstGlyph;	/* First glyph index included in the trimmed array. */
+   HBUINT16	glyphCount;	/* Total number of glyphs (equivalent to the last
+ 				 * glyph minus the value of firstGlyph plus 1). */
+   UnsizedArrayOf<T>
+@@ -326,7 +326,7 @@
+   protected:
+   HBUINT16	format;		/* Format identifier--format = 8 */
+   HBUINT16	valueSize;	/* Byte size of each value. */
+-  GlyphID	firstGlyph;	/* First glyph index included in the trimmed array. */
++  HBGlyphID	firstGlyph;	/* First glyph index included in the trimmed array. */
+   HBUINT16	glyphCount;	/* Total number of glyphs (equivalent to the last
+ 				 * glyph minus the value of firstGlyph plus 1). */
+   UnsizedArrayOf<HBUINT8>
+@@ -658,7 +658,7 @@
+     return_trace (c->check_struct (this) && classArray.sanitize (c));
+   }
+   protected:
+-  GlyphID		firstGlyph;	/* First glyph index included in the trimmed array. */
++  HBGlyphID		firstGlyph;	/* First glyph index included in the trimmed array. */
+   ArrayOf<HBUCHAR>	classArray;	/* The class codes (indexed by glyph index minus
+ 					 * firstGlyph). */
+   public:
+diff -Naur harfbuzz-2.6.1/src/hb-aat-layout-just-table.hh harfbuzz-2.6.1.new/src/hb-aat-layout-just-table.hh
+--- harfbuzz-2.6.1/src/hb-aat-layout-just-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-aat-layout-just-table.hh	2019-09-14 14:47:20.147738542 +0200
+@@ -70,9 +70,9 @@
+ 
+   ActionSubrecordHeader
+ 		header;
+-  Fixed		lowerLimit; 	/* If the distance factor is less than this value,
++  HBFixed		lowerLimit; 	/* If the distance factor is less than this value,
+ 				 * then the ligature is decomposed. */
+-  Fixed		upperLimit; 	/* If the distance factor is greater than this value,
++  HBFixed		upperLimit; 	/* If the distance factor is greater than this value,
+ 				 * then the ligature is decomposed. */
+   HBUINT16 	order;		/* Numerical order in which this ligature will
+ 				 * be decomposed; you may want infrequent ligatures
+@@ -100,7 +100,7 @@
+   protected:
+   ActionSubrecordHeader
+ 		header;
+-  GlyphID	addGlyph;	/* Glyph that should be added if the distance factor
++  HBGlyphID	addGlyph;	/* Glyph that should be added if the distance factor
+ 				 * is growing. */
+ 
+   public:
+@@ -118,14 +118,14 @@
+   protected:
+   ActionSubrecordHeader
+ 		header;
+-  Fixed 	substThreshold; /* Distance growth factor (in ems) at which
++  HBFixed 	substThreshold; /* Distance growth factor (in ems) at which
+ 				 * this glyph is replaced and the growth factor
+ 				 * recalculated. */
+-  GlyphID 	addGlyph; 	/* Glyph to be added as kashida. If this value is
++  HBGlyphID 	addGlyph; 	/* Glyph to be added as kashida. If this value is
+ 				 * 0xFFFF, no extra glyph will be added. Note that
+ 				 * generally when a glyph is added, justification
+ 				 * will need to be redone. */
+-  GlyphID 	substGlyph; 	/* Glyph to be substituted for this glyph if the
++  HBGlyphID 	substGlyph; 	/* Glyph to be substituted for this glyph if the
+ 				 * growth factor equals or exceeds the value of
+ 				 * substThreshold. */
+   public:
+@@ -146,13 +146,13 @@
+   HBUINT32 	variationAxis;	/* The 4-byte tag identifying the ductile axis.
+ 				 * This would normally be 0x64756374 ('duct'),
+ 				 * but you may use any axis the font contains. */
+-  Fixed 	minimumLimit; 	/* The lowest value for the ductility axis tha
++  HBFixed 	minimumLimit; 	/* The lowest value for the ductility axis tha
+ 				 * still yields an acceptable appearance. Normally
+ 				 * this will be 1.0. */
+-  Fixed 	noStretchValue; /* This is the default value that corresponds to
++  HBFixed 	noStretchValue; /* This is the default value that corresponds to
+ 				 * no change in appearance. Normally, this will
+ 				 * be 1.0. */
+-  Fixed 	maximumLimit; 	/* The highest value for the ductility axis that
++  HBFixed 	maximumLimit; 	/* The highest value for the ductility axis that
+ 				 * still yields an acceptable appearance. */
+   public:
+   DEFINE_SIZE_STATIC (22);
+@@ -170,7 +170,7 @@
+   ActionSubrecordHeader
+ 		header;
+   HBUINT16 	flags;		/* Currently unused; set to 0. */
+-  GlyphID 	glyph;		/* Glyph that should be added if the distance factor
++  HBGlyphID 	glyph;		/* Glyph that should be added if the distance factor
+ 				 * is growing. */
+   public:
+   DEFINE_SIZE_STATIC (10);
+@@ -271,14 +271,14 @@
+   };
+ 
+   protected:
+-  Fixed		beforeGrowLimit;/* The ratio by which the advance width of the
++  HBFixed		beforeGrowLimit;/* The ratio by which the advance width of the
+ 				 * glyph is permitted to grow on the left or top side. */
+-  Fixed		beforeShrinkLimit;
++  HBFixed		beforeShrinkLimit;
+ 				/* The ratio by which the advance width of the
+ 				 * glyph is permitted to shrink on the left or top side. */
+-  Fixed		afterGrowLimit;	/* The ratio by which the advance width of the glyph
++  HBFixed		afterGrowLimit;	/* The ratio by which the advance width of the glyph
+ 				 * is permitted to shrink on the left or top side. */
+-  Fixed		afterShrinkLimit;
++  HBFixed		afterShrinkLimit;
+ 				/* The ratio by which the advance width of the glyph
+ 				 * is at most permitted to shrink on the right or
+ 				 * bottom side. */
+diff -Naur harfbuzz-2.6.1/src/hb-aat-layout-kerx-table.hh harfbuzz-2.6.1.new/src/hb-aat-layout-kerx-table.hh
+--- harfbuzz-2.6.1/src/hb-aat-layout-kerx-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-aat-layout-kerx-table.hh	2019-09-14 14:47:20.148738547 +0200
+@@ -82,8 +82,8 @@
+   }
+ 
+   protected:
+-  GlyphID	left;
+-  GlyphID	right;
++  HBGlyphID	left;
++  HBGlyphID	right;
+   FWORD		value;
+   public:
+   DEFINE_SIZE_STATIC (6);
+diff -Naur harfbuzz-2.6.1/src/hb-aat-layout-morx-table.hh harfbuzz-2.6.1.new/src/hb-aat-layout-morx-table.hh
+--- harfbuzz-2.6.1/src/hb-aat-layout-morx-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-aat-layout-morx-table.hh	2019-09-14 14:47:20.148738547 +0200
+@@ -240,21 +240,21 @@
+       if (buffer->idx == buffer->len && !mark_set)
+         return;
+ 
+-      const GlyphID *replacement;
++      const HBGlyphID *replacement;
+ 
+       replacement = nullptr;
+       if (Types::extended)
+       {
+ 	if (entry.data.markIndex != 0xFFFF)
+ 	{
+-	  const Lookup<GlyphID> &lookup = subs[entry.data.markIndex];
++	  const Lookup<HBGlyphID> &lookup = subs[entry.data.markIndex];
+ 	  replacement = lookup.get_value (buffer->info[mark].codepoint, driver->num_glyphs);
+ 	}
+       }
+       else
+       {
+ 	unsigned int offset = entry.data.markIndex + buffer->info[mark].codepoint;
+-	const UnsizedArrayOf<GlyphID> &subs_old = (const UnsizedArrayOf<GlyphID> &) subs;
++	const UnsizedArrayOf<HBGlyphID> &subs_old = (const UnsizedArrayOf<HBGlyphID> &) subs;
+ 	replacement = &subs_old[Types::wordOffsetToIndex (offset, table, subs_old.arrayZ)];
+ 	if (!replacement->sanitize (&c->sanitizer) || !*replacement)
+ 	  replacement = nullptr;
+@@ -272,14 +272,14 @@
+       {
+ 	if (entry.data.currentIndex != 0xFFFF)
+ 	{
+-	  const Lookup<GlyphID> &lookup = subs[entry.data.currentIndex];
++	  const Lookup<HBGlyphID> &lookup = subs[entry.data.currentIndex];
+ 	  replacement = lookup.get_value (buffer->info[idx].codepoint, driver->num_glyphs);
+ 	}
+       }
+       else
+       {
+ 	unsigned int offset = entry.data.currentIndex + buffer->info[idx].codepoint;
+-	const UnsizedArrayOf<GlyphID> &subs_old = (const UnsizedArrayOf<GlyphID> &) subs;
++	const UnsizedArrayOf<HBGlyphID> &subs_old = (const UnsizedArrayOf<HBGlyphID> &) subs;
+ 	replacement = &subs_old[Types::wordOffsetToIndex (offset, table, subs_old.arrayZ)];
+ 	if (!replacement->sanitize (&c->sanitizer) || !*replacement)
+ 	  replacement = nullptr;
+@@ -304,7 +304,7 @@
+     bool mark_set;
+     unsigned int mark;
+     const ContextualSubtable *table;
+-    const UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT, false> &subs;
++    const UnsizedOffsetListOf<Lookup<HBGlyphID>, HBUINT, false> &subs;
+   };
+ 
+   bool apply (hb_aat_apply_context_t *c) const
+@@ -348,7 +348,7 @@
+   protected:
+   StateTable<Types, EntryData>
+ 		machine;
+-  NNOffsetTo<UnsizedOffsetListOf<Lookup<GlyphID>, HBUINT, false>, HBUINT>
++  NNOffsetTo<UnsizedOffsetListOf<Lookup<HBGlyphID>, HBUINT, false>, HBUINT>
+ 		substitutionTables;
+   public:
+   DEFINE_SIZE_STATIC (20);
+@@ -520,7 +520,7 @@
+ 	  if (action & (LigActionStore | LigActionLast))
+ 	  {
+ 	    ligature_idx = Types::offsetToIndex (ligature_idx, table, ligature.arrayZ);
+-	    const GlyphID &ligatureData = ligature[ligature_idx];
++	    const HBGlyphID &ligatureData = ligature[ligature_idx];
+ 	    if (unlikely (!ligatureData.sanitize (&c->sanitizer))) break;
+ 	    hb_codepoint_t lig = ligatureData;
+ 
+@@ -554,7 +554,7 @@
+     const LigatureSubtable *table;
+     const UnsizedArrayOf<HBUINT32> &ligAction;
+     const UnsizedArrayOf<HBUINT16> &component;
+-    const UnsizedArrayOf<GlyphID> &ligature;
++    const UnsizedArrayOf<HBGlyphID> &ligature;
+     unsigned int match_length;
+     unsigned int match_positions[HB_MAX_CONTEXT_LENGTH];
+   };
+@@ -586,7 +586,7 @@
+ 		ligAction;	/* Offset to the ligature action table. */
+   NNOffsetTo<UnsizedArrayOf<HBUINT16>, HBUINT>
+ 		component;	/* Offset to the component table. */
+-  NNOffsetTo<UnsizedArrayOf<GlyphID>, HBUINT>
++  NNOffsetTo<UnsizedArrayOf<HBGlyphID>, HBUINT>
+ 		ligature;	/* Offset to the actual ligature lists. */
+   public:
+   DEFINE_SIZE_STATIC (28);
+@@ -606,7 +606,7 @@
+     unsigned int count = c->buffer->len;
+     for (unsigned int i = 0; i < count; i++)
+     {
+-      const GlyphID *replacement = substitute.get_value (info[i].codepoint, num_glyphs);
++      const HBGlyphID *replacement = substitute.get_value (info[i].codepoint, num_glyphs);
+       if (replacement)
+       {
+ 	info[i].codepoint = *replacement;
+@@ -624,7 +624,7 @@
+   }
+ 
+   protected:
+-  Lookup<GlyphID>	substitute;
++  Lookup<HBGlyphID>	substitute;
+   public:
+   DEFINE_SIZE_MIN (2);
+ };
+@@ -726,7 +726,7 @@
+       {
+ 	unsigned int count = (flags & MarkedInsertCount);
+ 	unsigned int start = entry.data.markedInsertIndex;
+-	const GlyphID *glyphs = &insertionAction[start];
++	const HBGlyphID *glyphs = &insertionAction[start];
+ 	if (unlikely (!c->sanitizer.check_array (glyphs, count))) count = 0;
+ 
+ 	bool before = flags & MarkedInsertBefore;
+@@ -754,7 +754,7 @@
+       {
+ 	unsigned int count = (flags & CurrentInsertCount) >> 5;
+ 	unsigned int start = entry.data.currentInsertIndex;
+-	const GlyphID *glyphs = &insertionAction[start];
++	const HBGlyphID *glyphs = &insertionAction[start];
+ 	if (unlikely (!c->sanitizer.check_array (glyphs, count))) count = 0;
+ 
+ 	bool before = flags & CurrentInsertBefore;
+@@ -793,7 +793,7 @@
+     private:
+     hb_aat_apply_context_t *c;
+     unsigned int mark;
+-    const UnsizedArrayOf<GlyphID> &insertionAction;
++    const UnsizedArrayOf<HBGlyphID> &insertionAction;
+   };
+ 
+   bool apply (hb_aat_apply_context_t *c) const
+@@ -819,7 +819,7 @@
+   protected:
+   StateTable<Types, EntryData>
+ 		machine;
+-  NNOffsetTo<UnsizedArrayOf<GlyphID>, HBUINT>
++  NNOffsetTo<UnsizedArrayOf<HBGlyphID>, HBUINT>
+ 		insertionAction;	/* Byte offset from stateHeader to the start of
+ 					 * the insertion glyph table. */
+   public:
+diff -Naur harfbuzz-2.6.1/src/hb-aat-layout-trak-table.hh harfbuzz-2.6.1.new/src/hb-aat-layout-trak-table.hh
+--- harfbuzz-2.6.1/src/hb-aat-layout-trak-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-aat-layout-trak-table.hh	2019-09-12 12:00:03.541210648 +0200
+@@ -62,7 +62,7 @@
+   }
+ 
+   protected:
+-  Fixed		track;		/* Track value for this record. */
++  HBFixed		track;		/* Track value for this record. */
+   NameID	trackNameID;	/* The 'name' table index for this track.
+ 				 * (a short word or phrase like "loose"
+ 				 * or "very tight") */
+@@ -82,7 +82,7 @@
+ 			const void *base) const
+   {
+     unsigned int sizes = nSizes;
+-    hb_array_t<const Fixed> size_table ((base+sizeTable).arrayZ, sizes);
++    hb_array_t<const HBFixed> size_table ((base+sizeTable).arrayZ, sizes);
+ 
+     float s0 = size_table[idx].to_float ();
+     float s1 = size_table[idx + 1].to_float ();
+@@ -120,7 +120,7 @@
+     if (!sizes) return 0.;
+     if (sizes == 1) return trackTableEntry->get_value (base, 0, sizes);
+ 
+-    hb_array_t<const Fixed> size_table ((base+sizeTable).arrayZ, sizes);
++    hb_array_t<const HBFixed> size_table ((base+sizeTable).arrayZ, sizes);
+     unsigned int size_index;
+     for (size_index = 0; size_index < sizes - 1; size_index++)
+       if (size_table[size_index].to_float () >= ptem)
+@@ -141,7 +141,7 @@
+   protected:
+   HBUINT16	nTracks;	/* Number of separate tracks included in this table. */
+   HBUINT16	nSizes;		/* Number of point sizes included in this table. */
+-  LOffsetTo<UnsizedArrayOf<Fixed>, false>
++  LOffsetTo<UnsizedArrayOf<HBFixed>, false>
+ 		sizeTable;	/* Offset from start of the tracking table to
+ 				 * Array[nSizes] of size values.. */
+   UnsizedArrayOf<TrackTableEntry>
+diff -Naur harfbuzz-2.6.1/src/hb-coretext.cc harfbuzz-2.6.1.new/src/hb-coretext.cc
+--- harfbuzz-2.6.1/src/hb-coretext.cc	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-coretext.cc	2019-09-14 14:47:20.163738617 +0200
+@@ -302,7 +302,7 @@
+   if (unlikely (!face_data)) return nullptr;
+   CGFontRef cg_font = (CGFontRef) (const void *) face->data.coretext;
+ 
+-  CGFloat font_size = font->ptem <= 0.f ? HB_CORETEXT_DEFAULT_FONT_SIZE : font->ptem;
++  CGFloat font_size = (CGFloat) (font->ptem <= 0.f ? HB_CORETEXT_DEFAULT_FONT_SIZE : font->ptem);
+   CTFontRef ct_font = create_ct_font (cg_font, font_size);
+ 
+   if (unlikely (!ct_font))
+@@ -327,7 +327,7 @@
+   const hb_coretext_font_data_t *data = font->data.coretext;
+   if (unlikely (!data)) return nullptr;
+ 
+-  if (fabs (CTFontGetSize ((CTFontRef) data) - font->ptem) > .5)
++  if (fabs (CTFontGetSize ((CTFontRef) data) - (CGFloat) font->ptem) > .5)
+   {
+     /* XXX-MT-bug
+      * Note that evaluating condition above can be dangerous if another thread
+diff -Naur harfbuzz-2.6.1/src/hb-open-type.hh harfbuzz-2.6.1.new/src/hb-open-type.hh
+--- harfbuzz-2.6.1/src/hb-open-type.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-open-type.hh	2019-09-14 14:47:20.149738551 +0200
+@@ -116,9 +116,9 @@
+ };
+ 
+ /* 32-bit signed fixed-point number (16.16). */
+-struct Fixed : HBINT32
++struct HBFixed : HBINT32
+ {
+-  Fixed& operator = (uint32_t i) { HBINT32::operator= (i); return *this; }
++  HBFixed& operator = (uint32_t i) { HBINT32::operator= (i); return *this; }
+   // 65536 means 1<<16
+   float to_float () const  { return ((int32_t) v) / 65536.f; }
+   void set_float (float f) { v = roundf (f * 65536.f); }
+@@ -155,9 +155,9 @@
+ };
+ 
+ /* Glyph index number, same as uint16 (length = 16 bits) */
+-struct GlyphID : HBUINT16
++struct HBGlyphID : HBUINT16
+ {
+-  GlyphID& operator = (uint16_t i) { HBUINT16::operator= (i); return *this; }
++  HBGlyphID& operator = (uint16_t i) { HBUINT16::operator= (i); return *this; }
+ };
+ 
+ /* Script/language-system/feature index */
+diff -Naur harfbuzz-2.6.1/src/hb-ot-cmap-table.hh harfbuzz-2.6.1.new/src/hb-ot-cmap-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-cmap-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-cmap-table.hh	2019-09-14 14:47:20.149738551 +0200
+@@ -498,7 +498,7 @@
+   UINT		length;		/* Byte length of this subtable. */
+   UINT		language;	/* Ignore. */
+   UINT		startCharCode;	/* First character code covered. */
+-  ArrayOf<GlyphID, UINT>
++  ArrayOf<HBGlyphID, UINT>
+ 		glyphIdArray;	/* Array of glyph index values for character
+ 				 * codes in the range. */
+   public:
+@@ -694,7 +694,7 @@
+   }
+ 
+   HBUINT24	unicodeValue;	/* Base Unicode value of the UVS */
+-  GlyphID	glyphID;	/* Glyph ID of the UVS */
++  HBGlyphID	glyphID;	/* Glyph ID of the UVS */
+   public:
+   DEFINE_SIZE_STATIC (5);
+ };
+diff -Naur harfbuzz-2.6.1/src/hb-ot-color-cbdt-table.hh harfbuzz-2.6.1.new/src/hb-ot-color-cbdt-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-color-cbdt-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-color-cbdt-table.hh	2019-09-14 14:47:20.150738556 +0200
+@@ -226,8 +226,8 @@
+ 						   offset, length, format);
+   }
+ 
+-  GlyphID			firstGlyphIndex;
+-  GlyphID			lastGlyphIndex;
++  HBGlyphID			firstGlyphIndex;
++  HBGlyphID			lastGlyphIndex;
+   LOffsetTo<IndexSubtable>	offsetToSubtable;
+   public:
+   DEFINE_SIZE_STATIC(8);
+@@ -290,8 +290,8 @@
+   HBUINT32		colorRef;
+   SBitLineMetrics	horizontal;
+   SBitLineMetrics	vertical;
+-  GlyphID		startGlyphIndex;
+-  GlyphID		endGlyphIndex;
++  HBGlyphID		startGlyphIndex;
++  HBGlyphID		endGlyphIndex;
+   HBUINT8		ppemX;
+   HBUINT8		ppemY;
+   HBUINT8		bitDepth;
+diff -Naur harfbuzz-2.6.1/src/hb-ot-color-colr-table.hh harfbuzz-2.6.1.new/src/hb-ot-color-colr-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-color-colr-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-color-colr-table.hh	2019-09-14 14:47:20.150738556 +0200
+@@ -48,7 +48,7 @@
+   }
+ 
+   protected:
+-  GlyphID	glyphId;	/* Glyph ID of layer glyph */
++  HBGlyphID	glyphId;	/* Glyph ID of layer glyph */
+   Index		colorIdx;	/* Index value to use with a
+ 				 * selected color palette.
+ 				 * An index value of 0xFFFF
+@@ -75,7 +75,7 @@
+   }
+ 
+   public:
+-  GlyphID	glyphId;	/* Glyph ID of reference glyph */
++  HBGlyphID	glyphId;	/* Glyph ID of reference glyph */
+   HBUINT16	firstLayerIdx;	/* Index (from beginning of
+ 				 * the Layer Records) to the
+ 				 * layer record. There will be
+diff -Naur harfbuzz-2.6.1/src/hb-ot-glyf-table.hh harfbuzz-2.6.1.new/src/hb-ot-glyf-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-glyf-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-glyf-table.hh	2019-09-14 14:47:20.151738561 +0200
+@@ -296,7 +296,7 @@
+     };
+ 
+     HBUINT16 flags;
+-    GlyphID  glyphIndex;
++    HBGlyphID  glyphIndex;
+ 
+     unsigned int get_size () const
+     {
+diff -Naur harfbuzz-2.6.1/src/hb-ot-layout-base-table.hh harfbuzz-2.6.1.new/src/hb-ot-layout-base-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-layout-base-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-layout-base-table.hh	2019-09-14 14:47:20.151738561 +0200
+@@ -73,7 +73,7 @@
+   protected:
+   HBUINT16	format;		/* Format identifier--format = 2 */
+   FWORD		coordinate;	/* X or Y value, in design units */
+-  GlyphID	referenceGlyph;	/* Glyph ID of control glyph */
++  HBGlyphID	referenceGlyph;	/* Glyph ID of control glyph */
+   HBUINT16	coordPoint;	/* Index of contour point on the
+ 				 * reference glyph */
+   public:
+diff -Naur harfbuzz-2.6.1/src/hb-ot-layout-common.hh harfbuzz-2.6.1.new/src/hb-ot-layout-common.hh
+--- harfbuzz-2.6.1/src/hb-ot-layout-common.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-layout-common.hh	2019-09-14 14:47:20.152738565 +0200
+@@ -172,8 +172,8 @@
+   bool add_coverage (set_t *glyphs) const
+   { return glyphs->add_range (start, end); }
+ 
+-  GlyphID	start;		/* First GlyphID in the range */
+-  GlyphID	end;		/* Last GlyphID in the range */
++  HBGlyphID	start;		/* First GlyphID in the range */
++  HBGlyphID	end;		/* Last GlyphID in the range */
+   HBUINT16	value;		/* Value */
+   public:
+   DEFINE_SIZE_STATIC (6);
+@@ -856,7 +856,7 @@
+ 
+   protected:
+   HBUINT16	coverageFormat;	/* Format identifier--format = 1 */
+-  SortedArrayOf<GlyphID>
++  SortedArrayOf<HBGlyphID>
+ 		glyphArray;	/* Array of GlyphIDs--in numerical order */
+   public:
+   DEFINE_SIZE_ARRAY (4, glyphArray);
+@@ -1196,7 +1196,7 @@
+  */
+ 
+ static inline void ClassDef_serialize (hb_serialize_context_t *c,
+-				       hb_array_t<const GlyphID> glyphs,
++				       hb_array_t<const HBGlyphID> glyphs,
+ 				       hb_array_t<const HBUINT16> klasses);
+ 
+ struct ClassDefFormat1
+@@ -1210,7 +1210,7 @@
+   }
+ 
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_array_t<const GlyphID> glyphs,
++		  hb_array_t<const HBGlyphID> glyphs,
+ 		  hb_array_t<const HBUINT16> klasses)
+   {
+     TRACE_SERIALIZE (this);
+@@ -1241,7 +1241,7 @@
+     TRACE_SUBSET (this);
+     const hb_set_t &glyphset = *c->plan->glyphset ();
+     const hb_map_t &glyph_map = *c->plan->glyph_map;
+-    hb_sorted_vector_t<GlyphID> glyphs;
++    hb_sorted_vector_t<HBGlyphID> glyphs;
+     hb_vector_t<HBUINT16> klasses;
+ 
+     hb_codepoint_t start = startGlyph;
+@@ -1328,7 +1328,7 @@
+ 
+   protected:
+   HBUINT16	classFormat;	/* Format identifier--format = 1 */
+-  GlyphID	startGlyph;	/* First GlyphID of the classValueArray */
++  HBGlyphID	startGlyph;	/* First GlyphID of the classValueArray */
+   ArrayOf<HBUINT16>
+ 		classValue;	/* Array of Class Values--one per GlyphID */
+   public:
+@@ -1346,7 +1346,7 @@
+   }
+ 
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_array_t<const GlyphID> glyphs,
++		  hb_array_t<const HBGlyphID> glyphs,
+ 		  hb_array_t<const HBUINT16> klasses)
+   {
+     TRACE_SERIALIZE (this);
+@@ -1390,7 +1390,7 @@
+     TRACE_SUBSET (this);
+     const hb_set_t &glyphset = *c->plan->glyphset ();
+     const hb_map_t &glyph_map = *c->plan->glyph_map;
+-    hb_vector_t<GlyphID> glyphs;
++    hb_vector_t<HBGlyphID> glyphs;
+     hb_vector_t<HBUINT16> klasses;
+ 
+     unsigned int count = rangeRecord.len;
+@@ -1506,7 +1506,7 @@
+   }
+ 
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_array_t<const GlyphID> glyphs,
++		  hb_array_t<const HBGlyphID> glyphs,
+ 		  hb_array_t<const HBUINT16> klasses)
+   {
+     TRACE_SERIALIZE (this);
+@@ -1611,7 +1611,7 @@
+ };
+ 
+ static inline void ClassDef_serialize (hb_serialize_context_t *c,
+-				       hb_array_t<const GlyphID> glyphs,
++				       hb_array_t<const HBGlyphID> glyphs,
+ 				       hb_array_t<const HBUINT16> klasses)
+ { c->start_embed<ClassDef> ()->serialize (c, glyphs, klasses); }
+ 
+diff -Naur harfbuzz-2.6.1/src/hb-ot-layout-gpos-table.hh harfbuzz-2.6.1.new/src/hb-ot-layout-gpos-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-layout-gpos-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-layout-gpos-table.hh	2019-09-14 14:47:20.153738570 +0200
+@@ -758,7 +758,7 @@
+   friend struct PairSet;
+ 
+   protected:
+-  GlyphID	secondGlyph;		/* GlyphID of second glyph in the
++  HBGlyphID	secondGlyph;		/* GlyphID of second glyph in the
+ 					 * pair--first glyph is listed in the
+ 					 * Coverage table */
+   ValueRecord	values;			/* Positioning data for the first glyph
+diff -Naur harfbuzz-2.6.1/src/hb-ot-layout-gsub-table.hh harfbuzz-2.6.1.new/src/hb-ot-layout-gsub-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-layout-gsub-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-layout-gsub-table.hh	2019-09-14 15:27:32.326906872 +0200
+@@ -208,7 +208,7 @@
+     auto it =
+     + hb_zip (this+coverage, substitute)
+     | hb_filter (glyphset, hb_first)
+-    | hb_map_retains_sorting ([&] (hb_pair_t<hb_codepoint_t, const GlyphID &> p) -> hb_codepoint_pair_t
++    | hb_map_retains_sorting ([&] (hb_pair_t<hb_codepoint_t, const HBGlyphID &> p) -> hb_codepoint_pair_t
+ 			      { return hb_pair (glyph_map[p.first], glyph_map[p.second]); })
+     ;
+ 
+@@ -228,7 +228,7 @@
+   OffsetTo<Coverage>
+ 		coverage;		/* Offset to Coverage table--from
+ 					 * beginning of Substitution table */
+-  ArrayOf<GlyphID>
++  ArrayOf<HBGlyphID>
+ 		substitute;		/* Array of substitute
+ 					 * GlyphIDs--ordered by Coverage Index */
+   public:
+@@ -354,7 +354,7 @@
+   }
+ 
+   protected:
+-  ArrayOf<GlyphID>
++  ArrayOf<HBGlyphID>
+ 		substitute;		/* String of GlyphIDs to substitute */
+   public:
+   DEFINE_SIZE_ARRAY (2, substitute);
+@@ -401,9 +401,9 @@
+   }
+ 
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_sorted_array_t<const GlyphID> glyphs,
++		  hb_sorted_array_t<const HBGlyphID> glyphs,
+ 		  hb_array_t<const unsigned int> substitute_len_list,
+-		  hb_array_t<const GlyphID> substitute_glyphs_list)
++		  hb_array_t<const HBGlyphID> substitute_glyphs_list)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!c->extend_min (*this))) return_trace (false);
+@@ -447,9 +447,9 @@
+ struct MultipleSubst
+ {
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_sorted_array_t<const GlyphID> glyphs,
++		  hb_sorted_array_t<const HBGlyphID> glyphs,
+ 		  hb_array_t<const unsigned int> substitute_len_list,
+-		  hb_array_t<const GlyphID> substitute_glyphs_list)
++		  hb_array_t<const HBGlyphID> substitute_glyphs_list)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!c->extend_min (u.format))) return_trace (false);
+@@ -532,7 +532,7 @@
+   }
+ 
+   protected:
+-  ArrayOf<GlyphID>
++  ArrayOf<HBGlyphID>
+ 		alternates;		/* Array of alternate GlyphIDs--in
+ 					 * arbitrary order */
+   public:
+@@ -579,9 +579,9 @@
+   }
+ 
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_sorted_array_t<const GlyphID> glyphs,
++		  hb_sorted_array_t<const HBGlyphID> glyphs,
+ 		  hb_array_t<const unsigned int> alternate_len_list,
+-		  hb_array_t<const GlyphID> alternate_glyphs_list)
++		  hb_array_t<const HBGlyphID> alternate_glyphs_list)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!c->extend_min (*this))) return_trace (false);
+@@ -625,9 +625,9 @@
+ struct AlternateSubst
+ {
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_sorted_array_t<const GlyphID> glyphs,
++		  hb_sorted_array_t<const HBGlyphID> glyphs,
+ 		  hb_array_t<const unsigned int> alternate_len_list,
+-		  hb_array_t<const GlyphID> alternate_glyphs_list)
++		  hb_array_t<const HBGlyphID> alternate_glyphs_list)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!c->extend_min (u.format))) return_trace (false);
+@@ -735,7 +735,7 @@
+   template <typename Iterator,
+ 	    hb_requires (hb_is_source_of (Iterator, hb_codepoint_t))>
+   bool serialize (hb_serialize_context_t *c,
+-		  GlyphID ligature,
++		  HBGlyphID ligature,
+ 		  Iterator components /* Starting from second */)
+   {
+     TRACE_SERIALIZE (this);
+@@ -753,8 +753,8 @@
+   }
+ 
+   protected:
+-  GlyphID	ligGlyph;		/* GlyphID of ligature to substitute */
+-  HeadlessArrayOf<GlyphID>
++  HBGlyphID	ligGlyph;		/* GlyphID of ligature to substitute */
++  HeadlessArrayOf<HBGlyphID>
+ 		component;		/* Array of component GlyphIDs--start
+ 					 * with the second  component--ordered
+ 					 * in writing direction */
+@@ -814,9 +814,9 @@
+   }
+ 
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_array_t<const GlyphID> ligatures,
++		  hb_array_t<const HBGlyphID> ligatures,
+ 		  hb_array_t<const unsigned int> component_count_list,
+-		  hb_array_t<const GlyphID> &component_list /* Starting from second for each ligature */)
++		  hb_array_t<const HBGlyphID> &component_list /* Starting from second for each ligature */)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!c->extend_min (*this))) return_trace (false);
+@@ -906,11 +906,11 @@
+   }
+ 
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_sorted_array_t<const GlyphID> first_glyphs,
++		  hb_sorted_array_t<const HBGlyphID> first_glyphs,
+ 		  hb_array_t<const unsigned int> ligature_per_first_glyph_count_list,
+-		  hb_array_t<const GlyphID> ligatures_list,
++		  hb_array_t<const HBGlyphID> ligatures_list,
+ 		  hb_array_t<const unsigned int> component_count_list,
+-		  hb_array_t<const GlyphID> component_list /* Starting from second for each ligature */)
++		  hb_array_t<const HBGlyphID> component_list /* Starting from second for each ligature */)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!c->extend_min (*this))) return_trace (false);
+@@ -957,11 +957,11 @@
+ struct LigatureSubst
+ {
+   bool serialize (hb_serialize_context_t *c,
+-		  hb_sorted_array_t<const GlyphID> first_glyphs,
++		  hb_sorted_array_t<const HBGlyphID> first_glyphs,
+ 		  hb_array_t<const unsigned int> ligature_per_first_glyph_count_list,
+-		  hb_array_t<const GlyphID> ligatures_list,
++		  hb_array_t<const HBGlyphID> ligatures_list,
+ 		  hb_array_t<const unsigned int> component_count_list,
+-		  hb_array_t<const GlyphID> component_list /* Starting from second for each ligature */)
++		  hb_array_t<const HBGlyphID> component_list /* Starting from second for each ligature */)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!c->extend_min (u.format))) return_trace (false);
+@@ -1038,7 +1038,7 @@
+     if (!intersects (c->glyphs)) return;
+ 
+     const OffsetArrayOf<Coverage> &lookahead = StructAfter<OffsetArrayOf<Coverage>> (backtrack);
+-    const ArrayOf<GlyphID> &substitute = StructAfter<ArrayOf<GlyphID>> (lookahead);
++    const ArrayOf<HBGlyphID> &substitute = StructAfter<ArrayOf<HBGlyphID>> (lookahead);
+ 
+     + hb_zip (this+coverage, substitute)
+     | hb_filter (*c->glyphs, hb_first)
+@@ -1062,7 +1062,7 @@
+     for (unsigned int i = 0; i < count; i++)
+       if (unlikely (!(this+lookahead[i]).add_coverage (c->after))) return;
+ 
+-    const ArrayOf<GlyphID> &substitute = StructAfter<ArrayOf<GlyphID>> (lookahead);
++    const ArrayOf<HBGlyphID> &substitute = StructAfter<ArrayOf<HBGlyphID>> (lookahead);
+     count = substitute.len;
+     c->output->add_array (substitute.arrayZ, substitute.len);
+   }
+@@ -1082,7 +1082,7 @@
+     if (likely (index == NOT_COVERED)) return_trace (false);
+ 
+     const OffsetArrayOf<Coverage> &lookahead = StructAfter<OffsetArrayOf<Coverage>> (backtrack);
+-    const ArrayOf<GlyphID> &substitute = StructAfter<ArrayOf<GlyphID>> (lookahead);
++    const ArrayOf<HBGlyphID> &substitute = StructAfter<ArrayOf<HBGlyphID>> (lookahead);
+ 
+   unsigned int start_index = 0, end_index = 0;
+     if (match_backtrack (c,
+@@ -1120,7 +1120,7 @@
+     const OffsetArrayOf<Coverage> &lookahead = StructAfter<OffsetArrayOf<Coverage>> (backtrack);
+     if (!lookahead.sanitize (c, this))
+       return_trace (false);
+-    const ArrayOf<GlyphID> &substitute = StructAfter<ArrayOf<GlyphID>> (lookahead);
++    const ArrayOf<HBGlyphID> &substitute = StructAfter<ArrayOf<HBGlyphID>> (lookahead);
+     return_trace (substitute.sanitize (c));
+   }
+ 
+@@ -1137,7 +1137,7 @@
+ 		lookaheadX;		/* Array of coverage tables
+ 					 * in lookahead sequence, in glyph
+ 					 * sequence order */
+-  ArrayOf<GlyphID>
++  ArrayOf<HBGlyphID>
+ 		substituteX;		/* Array of substitute
+ 					 * GlyphIDs--ordered by Coverage Index */
+   public:
+@@ -1292,8 +1292,8 @@
+ 
+   bool serialize_single (hb_serialize_context_t *c,
+ 			 uint32_t lookup_props,
+-			 hb_sorted_array_t<const GlyphID> glyphs,
+-			 hb_array_t<const GlyphID> substitutes)
++			 hb_sorted_array_t<const HBGlyphID> glyphs,
++			 hb_array_t<const HBGlyphID> substitutes)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!Lookup::serialize (c, SubTable::Single, lookup_props, 1))) return_trace (false);
+@@ -1303,9 +1303,9 @@
+ 
+   bool serialize_multiple (hb_serialize_context_t *c,
+ 			   uint32_t lookup_props,
+-			   hb_sorted_array_t<const GlyphID> glyphs,
++			   hb_sorted_array_t<const HBGlyphID> glyphs,
+ 			   hb_array_t<const unsigned int> substitute_len_list,
+-			   hb_array_t<const GlyphID> substitute_glyphs_list)
++			   hb_array_t<const HBGlyphID> substitute_glyphs_list)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!Lookup::serialize (c, SubTable::Multiple, lookup_props, 1))) return_trace (false);
+@@ -1318,9 +1318,9 @@
+ 
+   bool serialize_alternate (hb_serialize_context_t *c,
+ 			    uint32_t lookup_props,
+-			    hb_sorted_array_t<const GlyphID> glyphs,
++			    hb_sorted_array_t<const HBGlyphID> glyphs,
+ 			    hb_array_t<const unsigned int> alternate_len_list,
+-			    hb_array_t<const GlyphID> alternate_glyphs_list)
++			    hb_array_t<const HBGlyphID> alternate_glyphs_list)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!Lookup::serialize (c, SubTable::Alternate, lookup_props, 1))) return_trace (false);
+@@ -1333,11 +1333,11 @@
+ 
+   bool serialize_ligature (hb_serialize_context_t *c,
+ 			   uint32_t lookup_props,
+-			   hb_sorted_array_t<const GlyphID> first_glyphs,
++			   hb_sorted_array_t<const HBGlyphID> first_glyphs,
+ 			   hb_array_t<const unsigned int> ligature_per_first_glyph_count_list,
+-			   hb_array_t<const GlyphID> ligatures_list,
++			   hb_array_t<const HBGlyphID> ligatures_list,
+ 			   hb_array_t<const unsigned int> component_count_list,
+-			   hb_array_t<const GlyphID> component_list /* Starting from second for each ligature */)
++			   hb_array_t<const HBGlyphID> component_list /* Starting from second for each ligature */)
+   {
+     TRACE_SERIALIZE (this);
+     if (unlikely (!Lookup::serialize (c, SubTable::Ligature, lookup_props, 1))) return_trace (false);
+diff -Naur harfbuzz-2.6.1/src/hb-ot-layout-jstf-table.hh harfbuzz-2.6.1.new/src/hb-ot-layout-jstf-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-layout-jstf-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-layout-jstf-table.hh	2019-09-14 14:47:20.154738575 +0200
+@@ -136,7 +136,7 @@
+  * ExtenderGlyphs -- Extender Glyph Table
+  */
+ 
+-typedef SortedArrayOf<GlyphID> ExtenderGlyphs;
++typedef SortedArrayOf<HBGlyphID> ExtenderGlyphs;
+ 
+ 
+ /*
+diff -Naur harfbuzz-2.6.1/src/hb-ot-math-table.hh harfbuzz-2.6.1.new/src/hb-ot-math-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-math-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-math-table.hh	2019-09-14 14:47:20.155738580 +0200
+@@ -423,7 +423,7 @@
+   }
+ 
+   protected:
+-  GlyphID variantGlyph;       /* Glyph ID for the variant. */
++  HBGlyphID variantGlyph;       /* Glyph ID for the variant. */
+   HBUINT16  advanceMeasurement; /* Advance width/height, in design units, of the
+ 				 * variant, in the direction of requested
+ 				 * glyph extension. */
+@@ -471,7 +471,7 @@
+   }
+ 
+   protected:
+-  GlyphID   glyph;		  /* Glyph ID for the part. */
++  HBGlyphID   glyph;		  /* Glyph ID for the part. */
+   HBUINT16    startConnectorLength; /* Advance width/ height of the straight bar
+ 				   * connector material, in design units, is at
+ 				   * the beginning of the glyph, in the
+diff -Naur harfbuzz-2.6.1/src/hb-ot-name-table.hh harfbuzz-2.6.1.new/src/hb-ot-name-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-name-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-name-table.hh	2019-09-14 14:47:20.156738584 +0200
+@@ -330,6 +330,9 @@
+   DEFINE_SIZE_ARRAY (6, nameRecordZ);
+ };
+ 
++#undef entry_index
++#undef entry_score
++
+ struct name_accelerator_t : name::accelerator_t {};
+ 
+ } /* namespace OT */
+diff -Naur harfbuzz-2.6.1/src/hb-ot-post-table.hh harfbuzz-2.6.1.new/src/hb-ot-post-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-post-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-post-table.hh	2019-09-12 12:00:03.542210653 +0200
+@@ -262,7 +262,7 @@
+ 					 * 0x00020000 for version 2.0
+ 					 * 0x00025000 for version 2.5 (deprecated)
+ 					 * 0x00030000 for version 3.0 */
+-  Fixed		italicAngle;		/* Italic angle in counter-clockwise degrees
++  HBFixed		italicAngle;		/* Italic angle in counter-clockwise degrees
+ 					 * from the vertical. Zero for upright text,
+ 					 * negative for text that leans to the right
+ 					 * (forward). */
+diff -Naur harfbuzz-2.6.1/src/hb-ot-shape-complex-arabic-fallback.hh harfbuzz-2.6.1.new/src/hb-ot-shape-complex-arabic-fallback.hh
+--- harfbuzz-2.6.1/src/hb-ot-shape-complex-arabic-fallback.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-shape-complex-arabic-fallback.hh	2019-09-14 14:47:20.155738580 +0200
+@@ -49,8 +49,8 @@
+ 					  hb_font_t *font,
+ 					  unsigned int feature_index)
+ {
+-  OT::GlyphID glyphs[SHAPING_TABLE_LAST - SHAPING_TABLE_FIRST + 1];
+-  OT::GlyphID substitutes[SHAPING_TABLE_LAST - SHAPING_TABLE_FIRST + 1];
++  OT::HBGlyphID glyphs[SHAPING_TABLE_LAST - SHAPING_TABLE_FIRST + 1];
++  OT::HBGlyphID substitutes[SHAPING_TABLE_LAST - SHAPING_TABLE_FIRST + 1];
+   unsigned int num_glyphs = 0;
+ 
+   /* Populate arrays */
+@@ -78,7 +78,7 @@
+   /* Bubble-sort or something equally good!
+    * May not be good-enough for presidential candidate interviews, but good-enough for us... */
+   hb_stable_sort (&glyphs[0], num_glyphs,
+-		  (int(*)(const OT::HBUINT16*, const OT::HBUINT16 *)) OT::GlyphID::cmp,
++		  (int(*)(const OT::HBUINT16*, const OT::HBUINT16 *)) OT::HBGlyphID::cmp,
+ 		  &substitutes[0]);
+ 
+ 
+@@ -99,15 +99,15 @@
+ arabic_fallback_synthesize_lookup_ligature (const hb_ot_shape_plan_t *plan HB_UNUSED,
+ 					    hb_font_t *font)
+ {
+-  OT::GlyphID first_glyphs[ARRAY_LENGTH_CONST (ligature_table)];
++  OT::HBGlyphID first_glyphs[ARRAY_LENGTH_CONST (ligature_table)];
+   unsigned int first_glyphs_indirection[ARRAY_LENGTH_CONST (ligature_table)];
+   unsigned int ligature_per_first_glyph_count_list[ARRAY_LENGTH_CONST (first_glyphs)];
+   unsigned int num_first_glyphs = 0;
+ 
+   /* We know that all our ligatures are 2-component */
+-  OT::GlyphID ligature_list[ARRAY_LENGTH_CONST (first_glyphs) * ARRAY_LENGTH_CONST(ligature_table[0].ligatures)];
++  OT::HBGlyphID ligature_list[ARRAY_LENGTH_CONST (first_glyphs) * ARRAY_LENGTH_CONST(ligature_table[0].ligatures)];
+   unsigned int component_count_list[ARRAY_LENGTH_CONST (ligature_list)];
+-  OT::GlyphID component_list[ARRAY_LENGTH_CONST (ligature_list) * 1/* One extra component per ligature */];
++  OT::HBGlyphID component_list[ARRAY_LENGTH_CONST (ligature_list) * 1/* One extra component per ligature */];
+   unsigned int num_ligatures = 0;
+ 
+   /* Populate arrays */
+@@ -125,7 +125,7 @@
+     num_first_glyphs++;
+   }
+   hb_stable_sort (&first_glyphs[0], num_first_glyphs,
+-		  (int(*)(const OT::HBUINT16*, const OT::HBUINT16 *)) OT::GlyphID::cmp,
++		  (int(*)(const OT::HBUINT16*, const OT::HBUINT16 *)) OT::HBGlyphID::cmp,
+ 		  &first_glyphs_indirection[0]);
+ 
+   /* Now that the first-glyphs are sorted, walk again, populate ligatures. */
+diff -Naur harfbuzz-2.6.1/src/hb-ot-stat-table.hh harfbuzz-2.6.1.new/src/hb-ot-stat-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-stat-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-stat-table.hh	2019-09-12 12:00:03.542210653 +0200
+@@ -77,7 +77,7 @@
+   NameID	valueNameID;	/* The name ID for entries in the 'name' table
+ 				 * that provide a display string for this
+ 				 * attribute value. */
+-  Fixed		value;		/* A numeric value for this attribute value. */
++  HBFixed		value;		/* A numeric value for this attribute value. */
+   public:
+   DEFINE_SIZE_STATIC (12);
+ };
+@@ -102,10 +102,10 @@
+   NameID	valueNameID;	/* The name ID for entries in the 'name' table
+ 				 * that provide a display string for this
+ 				 * attribute value. */
+-  Fixed		nominalValue;	/* A numeric value for this attribute value. */
+-  Fixed		rangeMinValue;	/* The minimum value for a range associated
++  HBFixed		nominalValue;	/* A numeric value for this attribute value. */
++  HBFixed		rangeMinValue;	/* The minimum value for a range associated
+ 				 * with the specified name ID. */
+-  Fixed		rangeMaxValue;	/* The maximum value for a range associated
++  HBFixed		rangeMaxValue;	/* The maximum value for a range associated
+ 				 * with the specified name ID. */
+   public:
+   DEFINE_SIZE_STATIC (20);
+@@ -131,8 +131,8 @@
+   NameID	valueNameID;	/* The name ID for entries in the 'name' table
+ 				 * that provide a display string for this
+ 				 * attribute value. */
+-  Fixed		value;		/* A numeric value for this attribute value. */
+-  Fixed		linkedValue;	/* The numeric value for a style-linked mapping
++  HBFixed		value;		/* A numeric value for this attribute value. */
++  HBFixed		linkedValue;	/* The numeric value for a style-linked mapping
+ 				 * from this value. */
+   public:
+   DEFINE_SIZE_STATIC (16);
+@@ -150,7 +150,7 @@
+   HBUINT16	axisIndex;	/* Zero-base index into the axis record array
+ 				 * identifying the axis to which this value
+ 				 * applies. Must be less than designAxisCount. */
+-  Fixed		value;		/* A numeric value for this attribute value. */
++  HBFixed		value;		/* A numeric value for this attribute value. */
+   public:
+   DEFINE_SIZE_STATIC (6);
+ };
+diff -Naur harfbuzz-2.6.1/src/hb-ot-var-fvar-table.hh harfbuzz-2.6.1.new/src/hb-ot-var-fvar-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-var-fvar-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-var-fvar-table.hh	2019-09-12 12:00:03.543210657 +0200
+@@ -44,7 +44,7 @@
+ {
+   friend struct fvar;
+ 
+-  hb_array_t<const Fixed> get_coordinates (unsigned int axis_count) const
++  hb_array_t<const HBFixed> get_coordinates (unsigned int axis_count) const
+   { return coordinatesZ.as_array (axis_count); }
+ 
+   bool sanitize (hb_sanitize_context_t *c, unsigned int axis_count) const
+@@ -58,7 +58,7 @@
+   NameID	subfamilyNameID;/* The name ID for entries in the 'name' table
+ 				 * that provide subfamily names for this instance. */
+   HBUINT16	flags;		/* Reserved for future use — set to 0. */
+-  UnsizedArrayOf<Fixed>
++  UnsizedArrayOf<HBFixed>
+ 		coordinatesZ;	/* The coordinates array for this instance. */
+   //NameID	postScriptNameIDX;/*Optional. The name ID for entries in the 'name'
+   //				  * table that provide PostScript names for this
+@@ -83,9 +83,9 @@
+ 
+   public:
+   Tag		axisTag;	/* Tag identifying the design variation for the axis. */
+-  Fixed		minValue;	/* The minimum coordinate value for the axis. */
+-  Fixed		defaultValue;	/* The default coordinate value for the axis. */
+-  Fixed		maxValue;	/* The maximum coordinate value for the axis. */
++  HBFixed		minValue;	/* The minimum coordinate value for the axis. */
++  HBFixed		defaultValue;	/* The default coordinate value for the axis. */
++  HBFixed		maxValue;	/* The maximum coordinate value for the axis. */
+   HBUINT16	flags;		/* Axis flags. */
+   NameID	axisNameID;	/* The name ID for entries in the 'name' table that
+ 				 * provide a display name for this axis. */
+@@ -286,7 +286,7 @@
+ 
+     if (coords_length && *coords_length)
+     {
+-      hb_array_t<const Fixed> instanceCoords = instance->get_coordinates (axisCount)
++      hb_array_t<const HBFixed> instanceCoords = instance->get_coordinates (axisCount)
+ 							 .sub_array (0, *coords_length);
+       for (unsigned int i = 0; i < instanceCoords.length; i++)
+         coords[i] = instanceCoords.arrayZ[i].to_float ();
+@@ -340,8 +340,8 @@
+   HBUINT16	instanceCount;	/* The number of named instances defined in the font
+ 				 * (the number of records in the instances array). */
+   HBUINT16	instanceSize;	/* The size in bytes of each InstanceRecord — set
+-				 * to either axisCount * sizeof(Fixed) + 4, or to
+-				 * axisCount * sizeof(Fixed) + 6. */
++				 * to either axisCount * sizeof(HBFixed) + 4, or to
++				 * axisCount * sizeof(HBFixed) + 6. */
+ 
+   public:
+   DEFINE_SIZE_STATIC (16);
+diff -Naur harfbuzz-2.6.1/src/hb-ot-vorg-table.hh harfbuzz-2.6.1.new/src/hb-ot-vorg-table.hh
+--- harfbuzz-2.6.1/src/hb-ot-vorg-table.hh	2019-08-23 00:52:24.000000000 +0200
++++ harfbuzz-2.6.1.new/src/hb-ot-vorg-table.hh	2019-09-14 14:47:20.156738584 +0200
+@@ -48,7 +48,7 @@
+   }
+ 
+   public:
+-  GlyphID	glyph;
++  HBGlyphID	glyph;
+   FWORD		vertOriginY;
+ 
+   public:
