@@ -14,7 +14,7 @@ class HarfbuzzConan(ConanFile):
     author = "Bincrafters <bincrafters@gmail.com>"
     license = "MIT"
     exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
-    exports_sources = ["CMakeLists.txt"]
+    exports_sources = ["CMakeLists.txt", "cmake-compile-fix.patch"]
     generators = "cmake"
     short_paths = True
 
@@ -58,6 +58,7 @@ class HarfbuzzConan(ConanFile):
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version), sha256=sha256)
         extracted_dir = self.name + "-" + self.version
         os.rename(extracted_dir, self._source_subfolder)
+        tools.patch(self._source_subfolder, "cmake-compile-fix.patch", strip=1)
 
     def _configure_cmake_compiler_flags(self, cmake):
         flags = []
