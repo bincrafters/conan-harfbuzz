@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 from conans import ConanFile, CMake, tools
 import os
 
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
-    version = "2.6.1"
+    version = "2.6.2"
     description = "HarfBuzz is an OpenType text shaping engine."
     topics = ("conan", "harfbuzz", "opentype", "text", "engine")
     url = "http://github.com/bincrafters/conan-harfbuzz"
@@ -14,7 +12,7 @@ class HarfbuzzConan(ConanFile):
     author = "Bincrafters <bincrafters@gmail.com>"
     license = "MIT"
     exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
-    exports_sources = ["CMakeLists.txt", "cmake-compile-fix.patch"]
+    exports_sources = ["CMakeLists.txt"]
     generators = "cmake"
     short_paths = True
 
@@ -54,11 +52,10 @@ class HarfbuzzConan(ConanFile):
 
     def source(self):
         source_url = "https://github.com/harfbuzz/harfbuzz"
-        sha256 = "8a5eb4ab0dc1634040307eecbc8cf1f1b65924a8b679aa346b49800aac3be692"
+        sha256 = "56a9bc6470751ae0fd8aa1912721c1596cf15900183dca9a3e10501422bab2b9"
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version), sha256=sha256)
         extracted_dir = self.name + "-" + self.version
         os.rename(extracted_dir, self._source_subfolder)
-        tools.patch(self._source_subfolder, "cmake-compile-fix.patch", strip=1)
 
     def _configure_cmake_compiler_flags(self, cmake):
         flags = []
