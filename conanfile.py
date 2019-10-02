@@ -23,13 +23,17 @@ class HarfbuzzConan(ConanFile):
         "with_freetype": [True, False],
         "with_icu": [True, False],
         "with_glib": [True, False],
+        "with_gdi": [True, False],
+        "with_uniscribe": [True, False]
     }
     default_options = {
         "shared": False,
         "fPIC": True,
         "with_freetype": True,
         "with_icu": False,
-        "with_glib": True
+        "with_glib": True,
+        "with_gdi": True,
+        "with_uniscribe": True
     }
 
     _source_subfolder = "source_subfolder"
@@ -50,6 +54,9 @@ class HarfbuzzConan(ConanFile):
     def config_options(self):
         if self.settings.os == "Windows":
             del self.options.fPIC
+        else:
+            del self.options.with_gdi
+            del self.options.with_uniscribe
 
     def source(self):
         source_url = "https://github.com/harfbuzz/harfbuzz"
@@ -85,6 +92,10 @@ class HarfbuzzConan(ConanFile):
 
         if self.options.with_icu:
             cmake.definitions["CMAKE_CXX_STANDARD"] = "17"
+
+        if self.settings.os == "Windows":
+            cmake.definitions["HB_HAVE_GDI"] = self.options.with_gdi
+            cmake.definitions["HB_HAVE_UNISCRIBE"] = self.options.with_uniscribe
 
         cmake.configure(build_folder=self._build_subfolder)
         return cmake
