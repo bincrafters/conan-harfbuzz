@@ -117,6 +117,4 @@ class HarfbuzzConan(ConanFile):
             self.cpp_info.libs.append("m")
         if self.settings.compiler == 'Visual Studio' and not self.options.shared:
             self.cpp_info.libs.extend(["dwrite", "rpcrt4", "usp10"])
-        if self.settings.os in ["Macos", "iOS", "watchOS", "tvOS"]:
-            self.cpp_info.exelinkflags.extend(["-framework CoreFoundation", "-framework CoreGraphics", "-framework CoreText"])
-            self.cpp_info.sharedlinkflags = self.cpp_info.exelinkflags
+        self.cpp_info.frameworks.extend(["CoreFoundation", "CoreGraphics", "CoreText"])
