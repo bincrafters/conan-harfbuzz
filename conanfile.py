@@ -9,7 +9,6 @@ class HarfbuzzConan(ConanFile):
     topics = ("conan", "harfbuzz", "opentype", "text", "engine")
     url = "http://github.com/bincrafters/conan-harfbuzz"
     homepage = "http://harfbuzz.org"
-    author = "Bincrafters <bincrafters@gmail.com>"
     license = "MIT"
     exports = ["FindHarfBuzz.cmake", "LICENSE.md"]
     exports_sources = ["CMakeLists.txt", "source_subfolder.patch"]
