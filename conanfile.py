@@ -115,6 +115,6 @@ class HarfbuzzConan(ConanFile):
         if self.settings.os == "Linux":
             self.cpp_info.system_libs.append("m")
         if self.settings.compiler == 'Visual Studio' and not self.options.shared:
-            self.cpp_info.system_libs.extend(["dwrite", "rpcrt4", "usp10"])
+            self.cpp_info.system_libs.extend(["dwrite", "rpcrt4", "usp10", "gdi32"])
         if self.settings.os == "Macos":
             self.cpp_info.frameworks.extend(["CoreFoundation", "CoreGraphics", "CoreText"])
