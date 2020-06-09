@@ -4,7 +4,7 @@ import os
 
 class HarfbuzzConan(ConanFile):
     name = "harfbuzz"
-    version = "2.6.4"
+    version = "2.6.7"
     description = "HarfBuzz is an OpenType text shaping engine."
     topics = ("conan", "harfbuzz", "opentype", "text", "engine")
     url = "http://github.com/bincrafters/conan-harfbuzz"
@@ -59,7 +59,7 @@ class HarfbuzzConan(ConanFile):
 
     def source(self):
         source_url = "https://github.com/harfbuzz/harfbuzz"
-        sha256 = "8745f0a6e3f233e961fdfec6882a9b03171603eb60ec9169fe8ba58f288fc5fd"
+        sha256 = "53974165e3a4b46624619a54407c7dc2cc77354ae1297b5ca1f8987569348693"
         tools.get("{0}/archive/{1}.tar.gz".format(source_url, self.version), sha256=sha256)
         extracted_dir = self.name + "-" + self.version
         os.rename(extracted_dir, self._source_subfolder)
