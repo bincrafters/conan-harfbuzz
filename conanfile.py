@@ -70,6 +70,8 @@ class HarfbuzzConan(ConanFile):
         compiler = str(self.settings.compiler)
         if compiler in ("clang", "apple-clang"):
             flags.append("-Wno-deprecated-declarations")
+        if self.settings.compiler == "gcc" and self.settings.os == "Windows":
+            flags.append("-Wa,-mbig-obj")
         cmake.definitions["CMAKE_C_FLAGS"] = " ".join(flags)
         cmake.definitions["CMAKE_CXX_FLAGS"] = cmake.definitions["CMAKE_C_FLAGS"]
 
